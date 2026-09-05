@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# KarmMitra AI — Docker Compose Orchestration (Member 1: Priyash)
+# ─────────────────────────────────────────────────────────────────────────────
+# WHY docker-compose:
+#   Single command (`docker compose up`) spins up the entire backend stack.
+#   Every teammate can reproduce the exact same environment regardless of OS.
+#   Member 6's mock-igot and Member 2's RAG service connect via karmmitra_net.
+#
+# WHY postgres:16-alpine:
+#   Alpine keeps the image ~70MB vs ~400MB for full Debian.
+#   PostgreSQL 16 supports the relational FRAC/KCM schema with JSON operators
+#   needed for future analytics aggregation queries.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: karmmitra_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-karmmitra_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Named volume persists data across container restarts during hackathon
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - karmmitra_net
+    # Health check ensures FastAPI waits for DB to be truly ready, not just "port open"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: karmmitra_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # Bind-mount source code for hot-reload during development
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      # CRITICAL FIX (Blind Spot #3): Inside Docker, "db" resolves to the
+      # postgres container hostname via karmmitra_net, NOT localhost.
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-karmmitra_db}
+      # host.docker.internal lets the container reach services on the host machine
+      # (Member 2's Ollama/vLLM typically runs on host, not in this compose stack)
+      - RAG_SERVICE_URL=${RAG_SERVICE_URL:-http://host.docker.internal:11434}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - karmmitra_net
+
+volumes:
+  pgdata:
+
+networks:
+  karmmitra_net:
+    driver: bridge
