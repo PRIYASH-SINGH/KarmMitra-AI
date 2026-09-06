@@ -40,3 +40,9 @@ MANIFEST
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Certificates and Keys
+certs/
+*.key
+*.pem
+*.pub
