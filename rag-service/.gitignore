@@ -1,0 +1,19 @@
+# Persistent ChromaDB disk storage
+vectorstore/
+
+# Environment configurations
+.env
+.venv/
+venv/
+env/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Raw training PDFs (never commit actual manuals to git repo; keep .gitkeep)
+data/raw_pdfs/*.pdf
+!data/raw_pdfs/.gitkeep
