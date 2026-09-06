@@ -1,0 +1,8 @@
+﻿node_modules/
+certs/*.key
+certs/*.pem
+.env
+.env.*
+!.env.example
+__pycache__/
+*.log
