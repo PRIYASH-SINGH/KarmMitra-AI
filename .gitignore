@@ -43,7 +43,18 @@ Thumbs.db
 
 docs/KarmMitra AI Prototype Prep.pdf
 docs/prep_text.txt
+docs/01_Handover.md
+docs/02_Decisions.md
+docs/03_Explicit_comments.md
+docs/04_Flow.md
 
+docs/05_Bug_Feature.md
+
+docs/06_Architecture.md
+
+docs/07_Gemini_Next_Steps_Handoff.md
+
+docs/Claude_Master_Context.md
 
 # Certificates and Keys
 certs/
