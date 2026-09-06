@@ -1,0 +1,11 @@
+﻿PyLTI1p3>=2.0.0
+cryptography>=42.0.0
+pyjwt[crypto]>=2.8.0
+httpx>=0.27.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+python-multipart>=0.0.9
+fastapi>=0.111.0
+uvicorn>=0.30.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
