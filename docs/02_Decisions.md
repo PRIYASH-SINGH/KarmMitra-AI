@@ -36,3 +36,19 @@ This document tracks the critical architectural and framework decisions made in 
 ## 9. Modern Docker Compose Spec
 * **What:** Removing the `version: '3.8'` declaration from `docker-compose.yml`.
 * **Why:** Compose V2 has fully integrated the compose command into the Docker CLI and deprecated the `version` attribute, which was causing terminal warnings.
+
+## 10. Root-Level Monorepo Docker Compose
+* **What:** A single `docker-compose.yml` at the workspace root orchestrates DB, Gateway, and Mock iGOT. The `backend/docker-compose.yml` is superseded.
+* **Why:** Cross-team services (RAG, LTI, Mock iGOT) must share a Docker network (`karmmitra_net`). A root-level compose file allows the gateway container to mount the entire repo and resolve all Python packages from a single `PYTHONPATH`.
+
+## 11. Unified Dockerfile with Multi-Service Dependencies
+* **What:** `backend/Dockerfile` installs `requirements.txt` from all three Python subsystems (backend, rag-service, lti-security) into a single image.
+* **Why:** The gateway imports RAG and LTI modules in-process, so all dependencies must coexist in the same Python environment. This avoids inter-container HTTP overhead for the RAG service.
+
+## 12. `sys.path` Isolation for Cross-Team Imports
+* **What:** `main.py` temporarily injects `lti-security/` or `rag-service/` into `sys.path`, imports the required module, then removes the path entry.
+* **Why:** Both `lti-security/app/` and `backend/app/` define a top-level `app` package. If both directories are on `sys.path` simultaneously, Python resolves `from app.core.config import settings` ambiguously. The inject-import-restore pattern ensures each module's internal `app` imports resolve to their own directory, not the backend's.
+
+## 13. Graceful Degradation for Cross-Team Modules
+* **What:** LTI router and RAG service imports in `main.py` are wrapped in `try/except`. The `/health` endpoint reports which integrations are active.
+* **Why:** During concurrent development, a teammate's subsystem may be incomplete, missing dependencies, or have broken imports. The gateway must still boot and serve its core endpoints (triage, pathways, admin) regardless.

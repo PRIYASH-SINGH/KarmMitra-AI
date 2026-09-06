@@ -3,29 +3,47 @@
 A Sovereign AI and LTI 1.3-Compliant Competency Engine for Mission Karmayogi & MoSPI.
 
 ## Tech Stack
-- **Backend**: FastAPI, Python 3.11
-- **Database**: PostgreSQL 16 (Async SQLAlchemy)
-- **AI/RAG**: Local Llama-3-8B via vLLM, ChromaDB
-- **Frontend**: React 18
-- **Infrastructure**: Docker Compose
+- **Backend Gateway**: FastAPI, Python 3.11, SQLAlchemy 2.0 (Async)
+- **Database**: PostgreSQL 16
+- **Sovereign AI/RAG**: Local Llama-3-8B via vLLM/Ollama, ChromaDB, SentenceTransformers
+- **LTI Security**: RS256 OIDC, JWT, AGS Passback, Bhashini NMT
+- **Mock LMS**: Express.js (Node 18) iGOT Karmayogi Simulator
+- **Frontend**: React 18 (Learner & Admin UIs — in development)
+- **Infrastructure**: Docker Compose (unified monorepo network)
 
-## Quick Start (Backend)
-
-The backend and database are fully containerized. To spin up the gateway and PostgreSQL database with auto-seeding:
+## Quick Start
 
 ```bash
-cd backend
-# Create your local environment file
+# 1. Copy the environment template
 cp .env.example .env
 
-# Build and run the containers
+# 2. Build and run the entire stack
 docker compose up --build -d
+
+# 3. Verify
+curl http://localhost:8000/health       # Unified Gateway
+curl http://localhost:9000/health       # Mock iGOT Platform
 ```
 
-The FastAPI gateway will be available at `http://localhost:8000`.
-API documentation (Swagger UI) is available at `http://localhost:8000/docs`.
+## Service Endpoints
+| Service | URL | Description |
+| :--- | :--- | :--- |
+| Gateway API Docs | `http://localhost:8000/docs` | Swagger UI for all endpoints |
+| Mock iGOT Portal | `http://localhost:9000` | LTI launch simulator & AGS receiver |
+| LTI JWKS | `http://localhost:8000/lti/jwks.json` | Tool public key set |
 
-To tear down and wipe the database:
+## Monorepo Layout
+```
+karmmitra-ai/
+├── backend/                # Member 1: FastAPI Gateway & PostgreSQL
+├── rag-service/            # Member 2: Sovereign AI RAG Pipeline
+├── lti-security/           # Member 3: LTI 1.3 Security & Bhashini
+├── mock-igot-platform/     # Member 6: Mock iGOT LMS Simulator
+├── docker-compose.yml      # Root orchestration (all services)
+└── .env.example            # Environment configuration template
+```
+
+## Tear Down
 ```bash
-docker compose down -v
+docker compose down -v      # Wipes DB volume for a clean restart
 ```
