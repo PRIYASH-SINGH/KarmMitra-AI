@@ -1,0 +1,58 @@
+[
+  {
+    "sub": "mospi_officer_101",
+    "userId": "mospi_officer_101",
+    "name": "Arjun Verma",
+    "email": "arjun.verma.sim@mock-mospi.gov.in",
+    "division": "Field Operations Division (FOD)",
+    "frac_role": "MOSPI_FOD_INV_01",
+    "role_title": "Statistical Field Investigator",
+    "designation": "Junior Statistical Officer",
+    "state": "Uttar Pradesh",
+    "history_count": 0,
+    "scenario_label": "Cold Start (New Induction)",
+    "description": "Newly recruited field investigator requiring 5-question baseline triage and initial 70:20:10 learning pathway generation."
+  },
+  {
+    "sub": "mospi_officer_202",
+    "userId": "mospi_officer_202",
+    "name": "Priya Nair",
+    "email": "priya.nair.sim@mock-mospi.gov.in",
+    "division": "Survey Design & Research Division (SDRD)",
+    "frac_role": "MOSPI_SDRD_ANL_02",
+    "role_title": "Survey Design Analyst",
+    "designation": "Senior Survey Methodologist",
+    "state": "Kerala",
+    "history_count": 5,
+    "scenario_label": "Advanced Gap Analysis (Mid-Career)",
+    "description": "Mid-career survey analyst with previous assessment history, validating multi-domain KCM competency gaps and adaptive RAG MCQs."
+  },
+  {
+    "sub": "mospi_officer_303",
+    "userId": "mospi_officer_303",
+    "name": "Vikramaditya Rao",
+    "email": "vikram.rao.sim@mock-mospi.gov.in",
+    "division": "National Accounts Division (NAD)",
+    "frac_role": "MOSPI_NAD_ECO_01",
+    "role_title": "National Accounts Economist",
+    "designation": "Joint Director (National Income)",
+    "state": "Maharashtra",
+    "history_count": 12,
+    "scenario_label": "Senior Leadership & Governance",
+    "description": "Senior national accounts official testing high-proficiency domain thresholds, AGS grade sync, and institutional admin metrics."
+  },
+  {
+    "sub": "mospi_officer_404",
+    "userId": "mospi_officer_404",
+    "name": "Ananya Sengupta",
+    "email": "ananya.sengupta.sim@mock-mospi.gov.in",
+    "division": "Field Operations Division (FOD)",
+    "frac_role": "MOSPI_FOD_INV_01",
+    "role_title": "Statistical Field Investigator",
+    "designation": "Superintending Field Officer",
+    "state": "West Bengal",
+    "history_count": 8,
+    "scenario_label": "Cross-Division Specialization",
+    "description": "Senior field supervisor transitioning across survey divisions, validating regional Bhashini Hindi translation and offline CAPI modules."
+  }
+]
