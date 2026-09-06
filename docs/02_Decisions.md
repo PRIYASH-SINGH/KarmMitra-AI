@@ -52,3 +52,11 @@ This document tracks the critical architectural and framework decisions made in 
 ## 13. Graceful Degradation for Cross-Team Modules
 * **What:** LTI router and RAG service imports in `main.py` are wrapped in `try/except`. The `/health` endpoint reports which integrations are active.
 * **Why:** During concurrent development, a teammate's subsystem may be incomplete, missing dependencies, or have broken imports. The gateway must still boot and serve its core endpoints (triage, pathways, admin) regardless.
+
+## 14. Unpinned Top-Level Dependencies
+* **What:** `backend/requirements.txt` was stripped of exact `==` versions and sub-dependencies, listing only top-level packages.
+* **Why:** When integrating three separate teams' modules (`backend`, `rag-service`, `lti-security`) into a single unified Docker container, strictly pinned sub-dependencies clashed directly (e.g., `fastapi==0.141.1` vs `fastapi<0.116.0`). Unpinning allowed `pip` to automatically resolve a compatible dependency tree across the entire monorepo.
+
+## 15. Forcing PyTorch CPU-Only Binaries
+* **What:** The gateway `Dockerfile` injects `--extra-index-url https://download.pytorch.org/whl/cpu` into the `pip install` command.
+* **Why:** The `rag-service` installs `sentence-transformers`, which by default pulls the massive GPU binaries for PyTorch (~5GB). Attempting to download 5GB inside a Docker build timed out the network and filled up the WSL 2 virtual disk, crashing the Docker Engine. The CPU flag drops the download to ~200MB, instantly stabilizing the build process.

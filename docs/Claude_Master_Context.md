@@ -67,13 +67,13 @@ The project is built as a microservices/monorepo ecosystem divided among 6 membe
 
 ---
 
-## 5. What Remains (Next Steps)
+## 5. Next Steps (Frontend Priority)
 
-1. **Frontend Integration**: Members 4 (Learner UI) and 5 (Admin UI) need to scaffold their React apps and consume the backend APIs.
+The backend infrastructure is now **Locked and Stable**. DevOps blockers including PyTorch timeout, pip conflicts, and WSL 2 crashes have all been resolved.
+
+1. **Frontend Integration**: Members 4 (Learner UI) and 5 (Admin UI) must clone the repo, build the backend, and scaffold their React + Vite apps (`localhost:3000` and `5173`). Point Axios clients to the running Gateway (`localhost:8000`).
 2. **Server-Side RAG Answer Caching**: `assessment.py` (`POST /submit`) still trusts the client's `correct_answers`. The backend must cache the AI-generated answer key during `/generate` and grade against that server-side state during `/submit`.
-3. **Docker Build Verification**: Run `docker compose up --build` from the repo root to verify the unified image builds correctly and all services communicate.
-4. **RSA Key Generation**: Member 3's LTI module requires RSA keypairs in `lti-security/certs/`. These must be generated before the LTI router can function.
-5. **PDF Ingestion**: Member 2's RAG service needs MoSPI/NSSTA PDFs dropped into `rag-service/data/raw_pdfs/` and the ingestion script run.
+3. **PDF Ingestion**: Member 2's RAG service needs MoSPI/NSSTA PDFs dropped into `rag-service/data/raw_pdfs/` and the ingestion script run.
 
 ---
 

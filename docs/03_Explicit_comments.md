@@ -45,3 +45,8 @@ class TriageQuestionOut(BaseModel):
     destructures: { id, questionText, options: [{key, text}], correctOption }
     """
 ```
+
+## DevOps Constraints and Warnings
+
+> [!CAUTION]
+> **RSA Keys Required for Mock iGOT:** The mock-igot-platform/certs/ directory MUST contain manually generated platform_private.key and platform_public.key via OpenSSL before building the mock container. If these are missing, the Node.js container will enter a fatal crash loop looking for them.

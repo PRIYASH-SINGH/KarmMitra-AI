@@ -4,7 +4,7 @@ This document traces the lifecycle of a user request across the KarmMitra AI dis
 
 ## Flow 1: LTI Handshake & Cold Start (Members 6 -> 3 -> 4 -> 1)
 
-1. **iGOT Portal (Member 6 Mock):** User selects an official persona and clicks "Launch".
+1. **iGOT Portal (Member 6 Mock):** User accesses `karmmitra_mock_igot` (running on port 9000) acting as the simulated LMS platform initiator, selects an official persona, and clicks "Launch".
 2. **OIDC Handshake:** Form POSTs a signed LTI 1.3 JWT to Member 3's `/lti/launch` route.
 3. **Decryption (Member 3):** JWT is decoded, verifying signature. Extracted: `user_id` (sub claim), `frac_role_code`, `lineitem_url`.
 4. **Redirect (Member 3):** User redirected to Learner UI (Member 4) with URL params: `?user_id=...&role=...`

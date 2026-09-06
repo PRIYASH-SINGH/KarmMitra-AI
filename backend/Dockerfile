@@ -24,7 +24,7 @@ COPY backend/requirements.txt /tmp/backend-reqs.txt
 COPY rag-service/requirements.txt /tmp/rag-reqs.txt
 COPY lti-security/requirements.txt /tmp/lti-reqs.txt
 
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu \
     -r /tmp/backend-reqs.txt \
     -r /tmp/rag-reqs.txt \
     -r /tmp/lti-reqs.txt

@@ -68,7 +68,8 @@ The backend follows a strict layered architecture:
    - SQLAlchemy ORM models representing PostgreSQL tables.
    - *Rule: Use type-hinted Columns and explicit ForeignKeys.*
 
-## Orchestration Details (Unified Stack)
+## Orchestration Details (Live Unified Stack)
+* **Status:** LIVE. The FastAPI Gateway, PostgreSQL Database, and Express Mock iGOT server are successfully running and communicating on the shared `karmmitra_net` Docker network.
 * **Root Compose:** `docker-compose.yml` at the repo root orchestrates `db`, `gateway`, and `mock-igot` on `karmmitra_net`.
 * **Unified Image:** The `gateway` container installs Python dependencies from all three subsystems (backend, rag-service, lti-security) into a single image.
 * **PYTHONPATH:** Set to `/workspace/backend:/workspace`, allowing the gateway to resolve both its own `app` package and cross-team modules.

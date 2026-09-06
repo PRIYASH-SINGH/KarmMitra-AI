@@ -1,68 +1,45 @@
 # KarmMitra AI — Deep Analysis & Next Steps Handoff
 
-**Target Audience:** Gemini Agent (Next Steps Execution)
-**Date:** Current Build Status
-**Context:** This report provides a comprehensive analysis of the KarmMitra AI (SIH26101) repository state following the pull of cross-functional team deliverables.
+**Target Audience:** Development Team & Agent Assistants
+**Date:** September 6, 2026
+**Status:** 🟢 BACKEND INFRASTRUCTURE LOCKED AND STABLE
 
 ---
 
-## 1. Project Status vs. Prototype Prep Blueprint
+## 1. Project Status vs. Prototype Blueprint
 
-Based on the `KarmMitra AI Prototype Prep.pdf` architecture matrix, the repository currently contains the following completed subsystems:
+Based on the architecture matrix, the repository currently contains the following completed and integrated subsystems:
 
 | Subsystem | Member | Status | Notes |
 | :--- | :--- | :--- | :--- |
-| **Core Backend & DB** | Member 1 | 🟢 COMPLETE | FastAPI Gateway, Async PostgreSQL 16, Pydantic schemas, and Triage/Admin stubs are fully scaffolded and secure. |
-| **Sovereign AI (RAG)** | Member 2 | 🟢 DELIVERED | `rag-service/` directory present. Implements PDF chunking, ChromaDB, and zero-hallucination Llama-3-8B generation. |
-| **LTI Security** | Member 3 | 🟢 DELIVERED | `lti-security/` directory present. Implements OIDC login, RS256 signature validation, and AGS Passback. |
-| **Mock iGOT LMS** | Member 6 | 🟢 DELIVERED | `mock-igot-platform/` directory present. Node.js/Express simulator for testing LTI launches and AGS receiver. |
-| **Learner UI** | Member 4 | 🔴 MISSING | React 18 frontend directory (`learner-ui/`) has not been scaffolded or pushed yet. |
-| **Admin UI** | Member 5 | 🔴 MISSING | React dashboard directory (`admin-ui/`) has not been scaffolded or pushed yet. |
+| **Core Backend & DB** | Member 1 | 🟢 INTEGRATED | FastAPI Gateway, Async PostgreSQL 16, Pydantic schemas, and Triage/Admin endpoints are fully scaffolded and secure. |
+| **Sovereign AI (RAG)** | Member 2 | 🟢 INTEGRATED | PDF chunking, ChromaDB, and zero-hallucination Llama-3-8B generation loaded in-process. |
+| **LTI Security** | Member 3 | 🟢 INTEGRATED | OIDC login, RS256 signature validation, and AGS Passback auto-mounted on `/lti`. |
+| **Mock iGOT LMS** | Member 6 | 🟢 INTEGRATED | Node.js/Express simulator running on port 9000 for testing LTI launches. |
+| **Learner UI** | Member 4 | 🔴 PENDING | React 18 frontend directory needs scaffolding. |
+| **Admin UI** | Member 5 | 🔴 PENDING | React dashboard directory needs scaffolding. |
 
 ---
 
-## 2. Technical Changes & Hardening Executed (Backend)
+## 2. DevOps & Integration Challenges Resolved Today
 
-The `backend/` directory has been heavily refined for production-grade security and hackathon reliability:
-1. **Triage Hardening:** Removed answer-key leakage in `GET /questions` via `TriageQuestionPublicOut`. Score grading in `POST /submit` is strictly evaluated server-side.
-2. **Cold-Start Auto-Upsert:** LTI launches dynamically provision new `OfficialProfile` records if they don't exist, preventing Foreign Key crashes.
-3. **Atomic Seeding:** `seed.py` utilizes `await db.flush()` to execute in a single atomic database transaction, fully mapping competencies for all default FRAC roles.
-4. **Pydantic Configurations:** Upgraded to Pydantic v2 `SettingsConfigDict(extra="ignore")` to prevent FastAPI crashes when parsing monolithic `.env` files.
-5. **Removed Secrets:** Cleaned all hardcoded database credentials and JWT secrets from `docker-compose.yml` and `config.py`.
+The backend infrastructure has undergone a massive hardening pass to resolve deep cross-team integration bugs:
 
----
-
-## 3. The Core Challenge: Cross-Team Integration (Next Steps)
-
-The immediate priority for the Gemini agent is **Cross-Team Integration**. Members 1, 2, and 3 have built isolated micro-components that now must be merged into the unified FastAPI Gateway. 
-
-### A. Monorepo Orchestration (Docker Compose)
-Currently, `backend/docker-compose.yml` only orchestrates the Postgres DB and the FastAPI app, binding only the `backend/` directory.
-**Action:** Create a root-level `docker-compose.yml` to orchestrate the entire monorepo. It must spin up the DB, FastAPI Gateway, and the `mock-igot-platform` (Node.js) on the same `karmmitra_net` bridge network.
-
-### B. Python Module Pathing
-Both `rag-service` (Member 2) and `lti-security` (Member 3) are designed to be imported directly into the Member 1 FastAPI gateway. 
-- `rag-service/README.md` expects: `from rag_service.app.service import RAGAssessmentService`
-- `lti-security/README.md` expects mounting: `app.include_router(lti_router)`
-**Action:** The backend Dockerfile/Compose must mount the root of the monorepo to the `/app` working directory (or configure `PYTHONPATH`) so that `backend/app/main.py` can successfully resolve and import `rag_service` and `lti_security`.
-
-### C. Wiring `assessment.py` (RAG Integration)
-**Action:** Remove the hardcoded dummy JSON fallback in `backend/app/api/v1/endpoints/assessment.py` (`POST /generate`). Import and instantiate `RAGAssessmentService` from Member 2, and invoke it to generate real AI MCQs.
-
-### D. Securing the AI Answer Key (Tech Debt)
-**Action:** Currently, `assessment.py` (`POST /submit`) trusts the client's `correct_answers` payload to grade the exam. This is a critical security vulnerability. 
-*Fix:* When `POST /generate` creates questions, the backend must cache the correct answers (e.g., in Redis, or a temporary DB table associated with the user's session) and evaluate the user's submission against that server-side cache.
-
-### E. Wiring LTI Security & AGS Passback
-**Action:** 
-1. Mount the LTI router from `lti-security/app/router.py` into `backend/app/main.py`.
-2. Update `assessment.py` (`POST /submit`) to trigger Member 3's real `submit_score` AGS passback function rather than simply returning `ags_status = "success"`.
+1. **Pip Version Collisions:** `backend/requirements.txt` strictly pinned sub-dependencies, which crashed with Member 2's `chromadb` (FastAPI < 0.116 requirement) and `langgraph`. We resolved this by unpinning sub-dependencies and keeping only top-level packages.
+2. **PyTorch GPU 5GB Timeout:** The build timed out trying to download 5GB of GPU binaries for `sentence-transformers`. Fixed by injecting `--extra-index-url https://download.pytorch.org/whl/cpu` into the Dockerfile `pip install` command.
+3. **Docker Engine Crash:** The 5GB aborted downloads filled the Windows C: drive to 99.9%, causing a total WSL 2 virtual disk failure (500 Internal Server Errors). Resolved via nuclear reset: `wsl --unregister docker-desktop` to rebuild a fresh virtual disk.
+4. **Mock iGOT Crash:** Node.js crashed looking for RSA keys. Resolved by manually generating `platform_private.key` and `platform_public.key` via OpenSSL in `mock-igot-platform/certs`.
 
 ---
 
-## Gemini Execution Instructions
+## 3. Immediate Priority: Frontend React Integration
 
-When you assume control, prioritize the following sequence:
-1. Initialize a root `docker-compose.yml` to network the Mock iGOT platform with the API and DB.
-2. Adjust Python imports and Docker volume mounts to unify `backend`, `rag-service`, and `lti-security` into a single running FastAPI process.
-3. Wire the `assessment.py` `/generate` and `/submit` logic to use the real RAG service and secure server-side grading.
+The backend DevOps architecture is officially locked, stable, and unified via `docker compose up --build`.
+
+**Immediate Priority for Members 4 and 5:**
+1. Clone the repository.
+2. Build and boot the backend stack.
+3. Scaffold your React + Vite servers (defaulting to `localhost:3000` and `localhost:5173`).
+4. Point your Axios clients to the running Gateway (`http://localhost:8000/api/v1/`).
+
+The backend handles CORS automatically for local dev environments, allowing immediate integration of the Learner UI and Admin Dashboard.

@@ -4,12 +4,16 @@
 **Project:** KarmMitra AI (SIH26101)
 **Date:** Current Build Status
 
-## Current Status: 🟢 INTEGRATED (Cross-Team Monorepo)
+## Current Status: 🟢 INFRASTRUCTURE LOCKED (Backend DevOps Completed)
+
+Backend (Member 1), RAG (Member 2), LTI (Member 3), and Mock iGOT (Member 6) are successfully integrated and running stably in a shared Docker Compose network (`karmmitra_net`). 
+
+**Pending Next Step:** Frontend UI (Members 4 & 5) need to connect to the live gateway.
 
 ### Completed Components
 1. **Infrastructure (Unified):**
    - Root-level `docker-compose.yml` orchestrating DB, Gateway, and Mock iGOT on `karmmitra_net`.
-   - Unified `backend/Dockerfile` installing dependencies for backend (M1), RAG (M2), and LTI (M3) in a single image.
+   - Unified `backend/Dockerfile` installing dependencies for backend (M1), RAG (M2), and LTI (M3) in a single image. Fixed pip resolution conflicts and forced PyTorch CPU-only installation to resolve build timeouts.
    - `.env.example` at repo root defining all environment variables across all subsystems.
 2. **Database & Core:**
    - Asynchronous SQLAlchemy (`asyncpg`) initialized in `app/core/database.py`.
