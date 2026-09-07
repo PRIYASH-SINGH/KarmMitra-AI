@@ -7,6 +7,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node
+node_modules/
+dist/
+*/node_modules/
+*/dist/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -15,7 +21,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -47,13 +52,9 @@ docs/01_Handover.md
 docs/02_Decisions.md
 docs/03_Explicit_comments.md
 docs/04_Flow.md
-
 docs/05_Bug_Feature.md
-
 docs/06_Architecture.md
-
 docs/07_Gemini_Next_Steps_Handoff.md
-
 docs/Claude_Master_Context.md
 
 # Certificates and Keys
