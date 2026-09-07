@@ -6,9 +6,9 @@
 
 ## Current Status: 🟢 INFRASTRUCTURE LOCKED (Backend DevOps Completed)
 
-Backend (Member 1), RAG (Member 2), LTI (Member 3), and Mock iGOT (Member 6) are successfully integrated and running stably in a shared Docker Compose network (`karmmitra_net`). 
+Backend (Member 1), RAG (Member 2), LTI (Member 3), Learner UI (Member 4), and Mock iGOT (Member 6) are successfully integrated and running stably. 
 
-**Pending Next Step:** Frontend UI (Members 4 & 5) need to connect to the live gateway.
+**Pending Next Step:** Admin UI (Member 5) needs to connect to the live gateway.
 
 ### Completed Components
 1. **Infrastructure (Unified):**
