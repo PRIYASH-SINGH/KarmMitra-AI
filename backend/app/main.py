@@ -25,7 +25,9 @@ CROSS-TEAM INTEGRATION:
 """
 
 import sys
+import os
 import logging
+import importlib
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
@@ -46,39 +48,133 @@ logger = logging.getLogger("karmmitra.gateway")
 # The workspace root is two levels up from this file (backend/app/main.py → workspace/)
 _workspace_root = Path(__file__).resolve().parent.parent.parent
 
+# Append absolute paths for workspace subsystems directly into sys.path
+# BEFORE the try/except import blocks to ensure submodules can be resolved.
+for _p in [
+    "/workspace/lti_security",
+    "/workspace/rag_service",
+    "/workspace/lti-security",
+    "/workspace/rag-service",
+    str(_workspace_root / "lti_security"),
+    str(_workspace_root / "rag_service"),
+    str(_workspace_root / "lti-security"),
+    str(_workspace_root / "rag-service"),
+]:
+    if _p not in sys.path:
+        sys.path.append(_p)
+
+
+def _load_lti_router_isolated():
+    """
+    INTENT: Explicitly load the LTI router using importlib and sys.modules isolation.
+    
+    WHY:
+      Both backend/app and lti-security/app share the top-level package name `app`.
+      Since backend/app is already loaded in sys.modules, attempting `from app.router`
+      would incorrectly query backend/app/ (which lacks router.py), failing with:
+        "No module named 'app.router'".
+      Temporarily isolating sys.modules during import ensures `app` resolves to
+      lti-security/app/ and its dependencies (oidc, validator, ags, security) bind correctly.
+    """
+    lti_dir = None
+    for candidate in [
+        Path("/workspace/lti_security"),
+        Path("/workspace/lti-security"),
+        _workspace_root / "lti_security",
+        _workspace_root / "lti-security",
+    ]:
+        if candidate.exists() and (candidate / "app" / "router.py").exists():
+            lti_dir = candidate
+            break
+
+    if lti_dir is None:
+        raise FileNotFoundError("Could not locate lti_security / lti-security directory with app/router.py")
+
+    lti_dir_str = str(lti_dir)
+    gateway_modules = {k: v for k, v in list(sys.modules.items()) if k == "app" or k.startswith("app.")}
+
+    try:
+        for k in list(gateway_modules.keys()):
+            sys.modules.pop(k, None)
+
+        if lti_dir_str in sys.path:
+            sys.path.remove(lti_dir_str)
+        sys.path.insert(0, lti_dir_str)
+
+        lti_router_mod = importlib.import_module("app.router")
+        router = getattr(lti_router_mod, "lti_router", None)
+        if router is None:
+            raise AttributeError("app.router does not export 'lti_router'")
+        return router
+    finally:
+        if lti_dir_str in sys.path:
+            sys.path.remove(lti_dir_str)
+        for k in list(sys.modules.keys()):
+            if k == "app" or k.startswith("app."):
+                sys.modules.pop(k, None)
+        sys.modules.update(gateway_modules)
+
+
+def _load_rag_service_isolated():
+    """
+    INTENT: Explicitly load RAGAssessmentService using importlib and sys.modules isolation.
+    """
+    rag_dir = None
+    for candidate in [
+        Path("/workspace/rag_service"),
+        Path("/workspace/rag-service"),
+        _workspace_root / "rag_service",
+        _workspace_root / "rag-service",
+    ]:
+        if candidate.exists() and (candidate / "app" / "service.py").exists():
+            rag_dir = candidate
+            break
+
+    if rag_dir is None:
+        raise FileNotFoundError("Could not locate rag_service / rag-service directory with app/service.py")
+
+    rag_dir_str = str(rag_dir)
+    gateway_modules = {k: v for k, v in list(sys.modules.items()) if k == "app" or k.startswith("app.")}
+
+    try:
+        for k in list(gateway_modules.keys()):
+            sys.modules.pop(k, None)
+
+        if rag_dir_str in sys.path:
+            sys.path.remove(rag_dir_str)
+        sys.path.insert(0, rag_dir_str)
+
+        service_mod = importlib.import_module("app.service")
+        generator_mod = importlib.import_module("app.generator")
+
+        RAGAssessmentService = getattr(service_mod, "RAGAssessmentService")
+        AssessmentPayload = getattr(generator_mod, "AssessmentPayload")
+
+        return RAGAssessmentService(), AssessmentPayload
+    finally:
+        if rag_dir_str in sys.path:
+            sys.path.remove(rag_dir_str)
+        for k in list(sys.modules.keys()):
+            if k == "app" or k.startswith("app."):
+                sys.modules.pop(k, None)
+        sys.modules.update(gateway_modules)
+
+
 # ─── Member 3: LTI Security Router ────────────────────────────────────────
-# lti-security/app/ uses `from app.core.config import settings` internally.
-# We temporarily prepend lti-security/ to sys.path so its `app` resolves
-# to lti-security/app/ (not backend/app/), then import and restore.
 _lti_router = None
 try:
-    _lti_root = str(_workspace_root / "lti-security")
-    sys.path.insert(0, _lti_root)
-    from app.router import lti_router as _lti_router  # noqa: E402
-    sys.path.remove(_lti_root)
+    _lti_router = _load_lti_router_isolated()
     logger.info("Member 3 LTI router loaded successfully")
 except Exception as e:
-    # Remove from path even on failure
-    _lti_root_str = str(_workspace_root / "lti-security")
-    if _lti_root_str in sys.path:
-        sys.path.remove(_lti_root_str)
     logger.warning("Member 3 LTI router unavailable, skipping: %s", e)
 
 # ─── Member 2: RAG Assessment Service ─────────────────────────────────────
 _rag_service = None
 _AssessmentPayload = None
 try:
-    _rag_root = str(_workspace_root / "rag-service")
-    sys.path.insert(0, _rag_root)
-    from app.service import RAGAssessmentService  # noqa: E402
-    from app.generator import AssessmentPayload as _AssessmentPayload  # noqa: E402
-    sys.path.remove(_rag_root)
-    _rag_service = RAGAssessmentService()
+    _rag_service, _AssessmentPayload = _load_rag_service_isolated()
     logger.info("Member 2 RAG service loaded successfully")
 except Exception as e:
-    _rag_root_str = str(_workspace_root / "rag-service")
-    if _rag_root_str in sys.path:
-        sys.path.remove(_rag_root_str)
     logger.warning("Member 2 RAG service unavailable, skipping: %s", e)
 
 

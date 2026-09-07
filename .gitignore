@@ -62,3 +62,6 @@ certs/
 *.key
 *.pem
 *.pub
+
+# LTI Keys
+backend/certs/*.key

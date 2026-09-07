@@ -49,4 +49,4 @@ class TriageQuestionOut(BaseModel):
 ## DevOps Constraints and Warnings
 
 > [!CAUTION]
-> **RSA Keys Required for Mock iGOT:** The mock-igot-platform/certs/ directory MUST contain manually generated platform_private.key and platform_public.key via OpenSSL before building the mock container. If these are missing, the Node.js container will enter a fatal crash loop looking for them.
+> **RSA Keys Required for Mock iGOT & Gateway:** The `mock-igot-platform/certs/` directory MUST contain manually generated `platform_private.key` and `platform_public.key` via OpenSSL before building the mock container. Additionally, the FastAPI Gateway requires its own LTI Tool keys in `backend/certs/private.key` and `backend/certs/public.key` for the `/lti/jwks.json` endpoint to work without throwing a `500 Internal Server Error`.

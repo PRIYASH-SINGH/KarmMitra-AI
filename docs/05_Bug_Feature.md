@@ -83,10 +83,14 @@ This document serves as the central tracker for critical bugs squashed and core 
 ### 9. PyTorch GPU 5GB Network Timeout
 * **Symptom:** The unified Docker build timed out repeatedly during pip install.
 * **Root Cause:** The sentence-transformers library (used by RAG) pulls the massive GPU binaries for PyTorch (~5GB) by default. The Docker WSL2 network layer timed out downloading this massive payload.
-* **Resolution:** Modified the ackend/Dockerfile to inject --extra-index-url https://download.pytorch.org/whl/cpu into the pip install command, forcing the lightweight (~200MB) CPU version of PyTorch.
+* **Resolution:** Modified the  ackend/Dockerfile to inject --extra-index-url https://download.pytorch.org/whl/cpu into the pip install command, forcing the lightweight (~200MB) CPU version of PyTorch.
 
 ### 10. Docker Engine Crash (WSL 2 Disk Full)
 * **Symptom:** Docker Desktop became unresponsive and threw 500 Internal Server Error on all socket commands (like docker ps).
 * **Root Cause:** The aborted 5GB PyTorch downloads from the failed builds accumulated and filled the Windows C: drive to 99.9% capacity, breaking the WSL 2 virtual disk.
 * **Resolution:** Resolved via nuclear option: ran wsl --unregister docker-desktop to destroy the bloated 17GB .vhdx file and restarted Docker Engine to rebuild a clean disk.
 
+### 11. Missing LTI 1.3 Cryptographic Keys
+* **Symptom:** The FastAPI Gateway threw a `500 Internal Server Error` with a `FileNotFoundError` when accessing the `/lti/jwks.json` endpoint.
+* **Root Cause:** The RSA keypair (`private.key` and `public.key`) required by the LTI router to sign JWTs and expose the public JWKS was missing from the `backend/certs/` directory.
+* **Resolution:** Used OpenSSL to manually generate a 2048-bit RSA keypair in `backend/certs/` and added `backend/certs/*.key` to `.gitignore` to prevent leaking private cryptographic keys into version control.
