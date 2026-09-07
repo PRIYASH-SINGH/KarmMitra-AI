@@ -16,7 +16,7 @@ graph TD
     %% Members 4 & 5 (Frontend)
     subgraph Frontends
         M4["Member 4: Learner UI React :3000"]
-        M5["Member 5: Admin UI React :5173"]
+        M5["Member 5: Admin UI React :5174"]
     end
 
     %% Unified Gateway (Members 1, 2, 3 — single process)
