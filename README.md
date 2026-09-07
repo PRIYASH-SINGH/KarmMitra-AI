@@ -8,7 +8,7 @@ A Sovereign AI and LTI 1.3-Compliant Competency Engine for Mission Karmayogi & M
 - **Sovereign AI/RAG**: Local Llama-3-8B via vLLM/Ollama, ChromaDB, SentenceTransformers
 - **LTI Security**: RS256 OIDC, JWT, AGS Passback, Bhashini NMT
 - **Mock LMS**: Express.js (Node 18) iGOT Karmayogi Simulator
-- **Frontend**: React 18 (Learner & Admin UIs — in development)
+- **Frontend**: React 18, Vite (Learner UI & Admin Dashboard)
 - **Infrastructure**: Docker Compose (unified monorepo network)
 
 ## Quick Start

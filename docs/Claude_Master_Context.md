@@ -69,9 +69,9 @@ The project is built as a microservices/monorepo ecosystem divided among 6 membe
 
 ## 5. Next Steps (Frontend Priority)
 
-The backend infrastructure is now **Locked and Stable**. DevOps blockers including PyTorch timeout, pip conflicts, and WSL 2 crashes have all been resolved.
+The backend infrastructure is now **Locked and Stable**. DevOps blockers including PyTorch timeout, pip conflicts, WSL 2 crashes, and namespace collisions have all been resolved. Both Learner UI and Admin UI have been successfully merged into the monorepo.
 
-1. **Admin UI Integration**: Member 5 (Admin UI) must clone the repo, build the backend, and scaffold their React + Vite app (`localhost:5173`). Point Axios clients to the running Gateway (`localhost:8000`). Member 4's Learner UI has been successfully merged into the monorepo.
+1. **E2E Testing**: Run both `learner-ui` and `admin-ui` locally to verify they interface correctly with the Dockerized gateway.
 2. **Server-Side RAG Answer Caching**: `assessment.py` (`POST /submit`) still trusts the client's `correct_answers`. The backend must cache the AI-generated answer key during `/generate` and grade against that server-side state during `/submit`.
 3. **PDF Ingestion**: Member 2's RAG service needs MoSPI/NSSTA PDFs dropped into `rag-service/data/raw_pdfs/` and the ingestion script run.
 

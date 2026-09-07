@@ -6,9 +6,9 @@
 
 ## Current Status: 🟢 INFRASTRUCTURE LOCKED (Backend DevOps Completed)
 
-Backend (Member 1), RAG (Member 2), LTI (Member 3), Learner UI (Member 4), and Mock iGOT (Member 6) are successfully integrated and running stably. 
+Backend (Member 1), RAG (Member 2), LTI (Member 3), Learner UI (Member 4), Admin UI (Member 5), and Mock iGOT (Member 6) are successfully integrated into the monorepo and running stably.
 
-**Pending Next Step:** Admin UI (Member 5) needs to connect to the live gateway.
+**Pending Next Step:** Ensure RAG assessment securely caches answer keys server-side (currently trusts client).
 
 ### Completed Components
 1. **Infrastructure (Unified):**
