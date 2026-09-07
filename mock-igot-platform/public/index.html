@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iGOT Karmayogi Platform Simulator — KarmMitra AI Test Harness</title>
+  <style>
+    :root {
+      --bg-main: #0b1120;
+      --bg-card: #1e293b;
+      --bg-card-alt: #0f172a;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent: #38bdf8;
+      --warning-bg: #451a03;
+      --warning-border: #b45309;
+      --warning-text: #fef08a;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Simulation Warning Banner */
+    .sim-banner {
+      background: repeating-linear-gradient(
+        -45deg,
+        #78350f,
+        #78350f 15px,
+        #b45309 15px,
+        #b45309 30px
+      );
+      color: #fff;
+      text-align: center;
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .badge-sim {
+      background: #312e81;
+      color: #c7d2fe;
+      border: 1px solid #4338ca;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #064e3b;
+      color: #a7f3d0;
+      border: 1px solid #059669;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34d399;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+    }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .panel-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .persona-card {
+      background: var(--bg-card-alt);
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 14px;
+      margin-bottom: 20px;
+    }
+
+    .persona-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+
+    .persona-meta {
+      font-size: 12px;
+      color: #94a3b8;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meta-item strong { color: #cbd5e1; }
+
+    .persona-desc {
+      font-size: 12px;
+      color: #e2e8f0;
+      background: #172554;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    .btn-launch {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.1s, opacity 0.2s;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-launch:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn-launch:active {
+      transform: translateY(1px);
+    }
+
+    /* History Table */
+    .history-table-container {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th {
+      background: var(--bg-card-alt);
+      color: var(--text-muted);
+      text-align: left;
+      padding: 10px 12px;
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e293b;
+      color: #cbd5e1;
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .score-high { background: #064e3b; color: #6ee7b7; }
+    .score-med { background: #713f12; color: #fde047; }
+    .score-low { background: #7f1d1d; color: #fca5a5; }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Quick Links Footer */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      padding: 14px 32px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quick-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .quick-links a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .quick-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Test Harness Simulation Warning -->
+  <div class="sim-banner">
+    ⚠️ SIMULATION ENVIRONMENT — NOT THE REAL iGOT KARMAYOGI LMS PORTAL — FOR LOCAL INTEGRATION QA ONLY
+  </div>
+
+  <header>
+    <div class="brand">
+      <div style="font-size: 28px;">🏛️</div>
+      <div>
+        <h1>iGOT Karmayogi Mock Platform</h1>
+        <p>LTI 1.3 Launch Initiator & AGS Grade Passback Testbed (Member 6)</p>
+      </div>
+      <span class="badge-sim">MOCK ECOSYSTEM</span>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span>PORT 9000 ACTIVE</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Persona Selector & Launch Simulator -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>🚀 Launch KarmMitra AI (LTI 1.3)</h2>
+        <span style="font-size: 12px; color: var(--text-muted);">RS256 Signed Launch</span>
+      </div>
+
+      <form id="launchForm" action="/platform/launch" method="POST" target="_blank">
+        <div class="form-group">
+          <label for="personaSelect">Select Synthetic MoSPI Official Persona:</label>
+          <select id="personaSelect" name="userId" onchange="renderSelectedPersona()">
+            <option value="">Loading personas...</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Persona Inspection Card -->
+        <div id="personaCard" class="persona-card" style="display: none;">
+          <div id="cardTitle" class="persona-title">Arjun Verma</div>
+          <div id="cardScenario" style="font-size: 12px; color: #93c5fd; font-weight: 600;">Scenario: Cold Start</div>
+          <div class="persona-meta">
+            <div class="meta-item"><strong>Sub / LTI ID:</strong> <span id="cardSub">-</span></div>
+            <div class="meta-item"><strong>Email:</strong> <span id="cardEmail">-</span></div>
+            <div class="meta-item"><strong>Division:</strong> <span id="cardDivision">-</span></div>
+            <div class="meta-item"><strong>FRAC Role:</strong> <span id="cardRole">-</span></div>
+            <div class="meta-item"><strong>Designation:</strong> <span id="cardDesignation">-</span></div>
+            <div class="meta-item"><strong>State:</strong> <span id="cardState">-</span></div>
+            <div class="meta-item"><strong>Past Triage / History:</strong> <span id="cardHistory">-</span></div>
+          </div>
+          <div id="cardDesc" class="persona-desc">Newly recruited field investigator requiring 5-question baseline diagnostic triage.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="customLaunchUrl">Target Tool Launch URL (Member 3 / Member 1 Gateway):</label>
+          <input type="text" id="customLaunchUrl" name="customLaunchUrl" value="http://localhost:8000/lti/launch" />
+        </div>
+
+        <button type="submit" class="btn-launch">
+          <span>🚀</span>
+          <span>Launch KarmMitra Embedded AI Plugin</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Right Column: Live AGS Grade Passback Monitor -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>📊 Live AGS Grade Passback Stream</h2>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action" onclick="sendMockPassback()">Send Sample Passback</button>
+          <button class="btn-action" onclick="clearAgsHistory()">Clear Log</button>
+        </div>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+        Real-time score submissions captured at <code>/platform/ags/lineitem/.../scores</code>.
+      </p>
+
+      <div class="history-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Official (sub)</th>
+              <th>Score</th>
+              <th>Progress</th>
+              <th>Comment</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr>
+              <td colspan="5" class="empty-state">No AGS passbacks captured yet. Launch an assessment to see grades stream in here!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>KarmMitra AI (SIH26101) — Sovereign Competency Engine for MoSPI & Mission Karmayogi</div>
+    <div class="quick-links">
+      <a href="/.well-known/jwks.json" target="_blank">Platform JWKS</a>
+      <a href="/api/users" target="_blank">Synthetic Personas</a>
+      <a href="/api/courses" target="_blank">Course Catalog</a>
+      <a href="/platform/ags/history" target="_blank">AGS History JSON</a>
+      <a href="/health" target="_blank">Health Status</a>
+    </div>
+  </footer>
+
+  <script>
+    let usersData = [];
+
+    // Load synthetic personas on page boot
+    async function loadPersonas() {
+      try {
+        const resp = await fetch('/api/users');
+        usersData = await resp.json();
+        const select = document.getElementById('personaSelect');
+        select.innerHTML = '';
+        usersData.forEach(user => {
+          const opt = document.createElement('option');
+          opt.value = user.userId || user.sub;
+          opt.textContent = `[${user.scenario_label}] ${user.name} — ${user.designation} (${user.division})`;
+          select.appendChild(opt);
+        });
+        if (usersData.length > 0) {
+          renderSelectedPersona();
+        }
+      } catch (err) {
+        console.error('Failed to load personas:', err);
+      }
+    }
+
+    function renderSelectedPersona() {
+      const select = document.getElementById('personaSelect');
+      const selectedId = select.value;
+      const user = usersData.find(u => (u.userId || u.sub) === selectedId);
+      if (!user) return;
+
+      document.getElementById('cardTitle').textContent = user.name;
+      document.getElementById('cardScenario').textContent = `Scenario: ${user.scenario_label}`;
+      document.getElementById('cardSub').textContent = user.sub;
+      document.getElementById('cardEmail').textContent = user.email;
+      document.getElementById('cardDivision').textContent = user.division;
+      document.getElementById('cardRole').textContent = `${user.frac_role} (${user.role_title || ''})`;
+      document.getElementById('cardDesignation').textContent = user.designation;
+      document.getElementById('cardState').textContent = user.state;
+      document.getElementById('cardHistory').textContent = `${user.history_count} previous records`;
+      document.getElementById('cardDesc').textContent = user.description;
+      document.getElementById('personaCard').style.display = 'block';
+    }
+
+    // Refresh AGS Passback History
+    async function refreshHistory() {
+      try {
+        const resp = await fetch('/platform/ags/history');
+        const data = await resp.json();
+        const tbody = document.getElementById('historyBody');
+
+        if (!data.history || data.history.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No AGS passbacks captured yet. Complete an assessment to see grades stream in here!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        data.history.forEach(rec => {
+          const tr = document.createElement('tr');
+          const timeStr = new Date(rec.receivedAt).toLocaleTimeString();
+          let scoreClass = 'score-med';
+          if (rec.percentage >= 80) scoreClass = 'score-high';
+          else if (rec.percentage < 60) scoreClass = 'score-low';
+
+          tr.innerHTML = `
+            <td>${timeStr}</td>
+            <td><strong>${rec.userId}</strong></td>
+            <td><span class="score-badge ${scoreClass}">${rec.scoreGiven} / ${rec.scoreMaximum} (${rec.percentage}%)</span></td>
+            <td>${rec.activityProgress || 'Completed'}</td>
+            <td>${rec.comment || '—'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Error refreshing AGS history:', err);
+      }
+    }
+
+    async function clearAgsHistory() {
+      if (confirm('Clear all captured grade passback records?')) {
+        await fetch('/platform/ags/history', { method: 'DELETE' });
+        refreshHistory();
+      }
+    }
+
+    // Simulate sending a test grade passback directly from the harness
+    async function sendMockPassback() {
+      const select = document.getElementById('personaSelect');
+      const userId = select.value || 'mospi_officer_101';
+      const sampleScore = Math.floor(Math.random() * 25) + 75; // 75 to 100
+
+      const payload = {
+        userId: userId,
+        scoreGiven: sampleScore,
+        scoreMaximum: 100.0,
+        activityProgress: "Completed",
+        gradingProgress: "FullyGraded",
+        comment: `Automated QA passback test for ${userId} via harness UI`
+      };
+
+      try {
+        const resp = await fetch('/platform/ags/lineitem/competency_assessment/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        alert(`Grade recorded successfully! Score: ${sampleScore}/100. Check the table.`);
+        refreshHistory();
+      } catch (err) {
+        alert(`Error sending passback: ${err.message}`);
+      }
+    }
+
+    // Initialize and start polling
+    loadPersonas();
+    refreshHistory();
+    setInterval(refreshHistory, 3000);
+  </script>
+</body>
+</html>

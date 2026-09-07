@@ -1,0 +1,57 @@
+[
+  {
+    "course_id": "IGOT_MOSPI_CAPI_101",
+    "title": "Computer Assisted Personal Interviewing (CAPI) Field Operations",
+    "category": "70_EXPERIENTIAL",
+    "competency_code": "KCM_FUNC_STAT_04",
+    "competency_name": "CAPI Data Collection",
+    "target_division": "Field Operations Division (FOD)",
+    "duration_hours": 16,
+    "provider": "National Statistical Systems Training Academy (NSSTA)",
+    "description": "Hands-on field simulation for tablet-based socio-economic surveys, data synchronization, and validation checks."
+  },
+  {
+    "course_id": "IGOT_MOSPI_SURVEY_201",
+    "title": "Multi-Stage Stratified Sampling & UFS Block Listing",
+    "category": "10_FORMAL",
+    "competency_code": "KCM_FUNC_SURVEY_02",
+    "competency_name": "Survey Sampling",
+    "target_division": "Survey Design & Research Division (SDRD)",
+    "duration_hours": 24,
+    "provider": "MoSPI Training Unit & ISI Kolkata",
+    "description": "Rigorous theoretical formulation of sampling frames, urban frame surveys (UFS), weight calculations, and standard error minimization."
+  },
+  {
+    "course_id": "IGOT_MOSPI_NAD_301",
+    "title": "System of National Accounts (SNA 2008) & Gross Value Added",
+    "category": "10_FORMAL",
+    "competency_code": "KCM_DOM_INDEX_01",
+    "competency_name": "Index Theory (CPI/IIP)",
+    "target_division": "National Accounts Division (NAD)",
+    "duration_hours": 30,
+    "provider": "Reserve Bank of India & MoSPI Joint Academy",
+    "description": "Macroeconomic framework for calculating Gross Domestic Product, Gross Value Added, and institutional sector balance sheets."
+  },
+  {
+    "course_id": "IGOT_MOSPI_PEER_401",
+    "title": "Cross-Cadre Statistical Peer Circle: Data Auditing & Field Oversight",
+    "category": "20_COLLABORATIVE",
+    "competency_code": "KCM_BEH_ETHICS_03",
+    "competency_name": "Ethical Governance",
+    "target_division": "All Divisions",
+    "duration_hours": 12,
+    "provider": "Capacity Building Commission (CBC)",
+    "description": "Peer mentorship circles, case discussions on field data integrity, respondent consent protocols, and ethical governance standards."
+  },
+  {
+    "course_id": "IGOT_MOSPI_SDG_501",
+    "title": "Sustainable Development Goals (SDG) National Indicator Framework",
+    "category": "70_EXPERIENTIAL",
+    "competency_code": "KCM_DOM_INDEX_01",
+    "competency_name": "Index Theory (CPI/IIP)",
+    "target_division": "Social Statistics Division (SSD)",
+    "duration_hours": 18,
+    "provider": "NITI Aayog & MoSPI Collaboration",
+    "description": "Practical workshops on mapping state-level administrative registries to 300+ National Indicator Framework metrics."
+  }
+]

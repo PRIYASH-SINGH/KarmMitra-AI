@@ -1,0 +1,21 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# RSA Certificates and Keys
+certs/
+*.key
+*.pem
+*.pub
+
+# Python cache & virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/

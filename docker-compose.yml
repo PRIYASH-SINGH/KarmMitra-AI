@@ -1,0 +1,89 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# KarmMitra AI — Root Monorepo Orchestration
+# ─────────────────────────────────────────────────────────────────────────────
+# Unifies Member 1 (Gateway + DB), Member 2 (RAG), Member 3 (LTI), and
+# Member 6 (Mock iGOT) into a single Docker Compose network.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # -----------------------------------------------------------
+  # 1. Relational Database (Member 1)
+  # -----------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: karmmitra_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mospi_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-karmmitra_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - karmmitra_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-karmmitra_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------
+  # 2. Unified FastAPI Gateway (Members 1, 2, 3)
+  # -----------------------------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: karmmitra_gateway
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /workspace/backend
+    volumes:
+      # Mount entire repo root so PYTHONPATH can resolve all packages
+      - .:/workspace
+      - chroma_data:/workspace/rag-service/vectorstore
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/workspace/backend:/workspace
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-mospi_secure_password}@db:5432/${POSTGRES_DB:-karmmitra_db}
+      - SECRET_KEY=${SECRET_KEY:-karmmitra-sih26101-dev-secret}
+      - RAG_SERVICE_URL=http://host.docker.internal:11434
+      - PLATFORM_ISSUER=https://igotkarmayogi.gov.in
+      - PLATFORM_CLIENT_ID=karmmitra_sih26101_tool
+      - PLATFORM_AUTH_URL=http://localhost:9000/platform/oidc/auth
+      - PLATFORM_TOKEN_URL=http://mock-igot:9000/oauth2/token
+      - PLATFORM_KEYSET_URL=http://mock-igot:9000/.well-known/jwks.json
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - karmmitra_net
+
+  # -----------------------------------------------------------
+  # 3. Mock iGOT LMS Simulator (Member 6)
+  # -----------------------------------------------------------
+  mock-igot:
+    build:
+      context: ./mock-igot-platform
+    container_name: karmmitra_mock_igot
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - TOOL_LAUNCH_URL=http://gateway:8000/lti/launch
+    networks:
+      - karmmitra_net
+
+volumes:
+  pgdata:
+  chroma_data:
+
+networks:
+  karmmitra_net:
+    driver: bridge
