@@ -38,9 +38,8 @@ karmmitra-ai/
 ├── backend/                # Member 1: FastAPI Gateway & PostgreSQL
 ├── rag-service/            # Member 2: Sovereign AI RAG Pipeline
 ├── lti-security/           # Member 3: LTI 1.3 Security & Bhashini
-├── mock-igot-platform/     # Member 6:
-├── Mock iGOT LMS Simulator
-├── admin-ui/               # Member 5:
+├── mock-igot-platform/     # Member 6: Mock iGOT LMS Simulator
+├── admin-ui/               # Member 5: React Admin Dashboard
 ├── learner-ui/             # Member 4: React Learner Dashboard
 ├── docker-compose.yml      # Root orchestration (all services)
 └── .env.example            # Environment configuration template
