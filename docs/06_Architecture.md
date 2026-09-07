@@ -76,3 +76,21 @@ The backend follows a strict layered architecture:
 * **In-Process Integration:** Member 2 (RAG) and Member 3 (LTI) are loaded directly into the FastAPI process via `sys.path` injection in `main.py`, avoiding inter-container HTTP overhead.
 * **Volume Persistence:** PostgreSQL data uses `pgdata`, ChromaDB vectors use `chroma_data`.
 * **Network Exit:** The container connects to Member 2's Ollama via `host.docker.internal` (mapped via `extra_hosts`).
+
+## Learning Resources & Mental Models
+
+To help teammates quickly grasp *why* we chose this specific stack, here are plain-English analogies for our core technologies:
+
+* **LTI 1.3 OIDC (Security): "The VIP Bouncer Pass"**
+  * **Why we use it:** Instead of forcing officers to create new passwords (which risks MoSPI data), the iGOT LMS acts as a bouncer. It verifies the officer and hands our app a cryptographically signed VIP pass (JWT) containing their exact role and identity. We don't verify the user; we verify the bouncer's signature.
+
+* **FastAPI Async Orchestration: "The Smart Restaurant Kitchen"**
+  * **Why we use it:** If our local AI model takes 10-15 seconds to "cook" a RAG assessment, a synchronous server would freeze, dropping all other requests. FastAPI's asynchronous event loop lets the gateway instantly serve Admin UI charts while the AI chef continues cooking in the background.
+
+* **Docker Compose Networks: "The Walled Garden"**
+  * **Why we use it:** Our PostgreSQL database and internal services aren't exposed to the chaotic public internet. They live inside karmmitra_net, an exclusive virtual network where containers can securely talk to each other using simple names (e.g., postgres://db:5432) without complex firewall rules.
+
+* **RAG / ChromaDB Vector Stores: "The Open-Book Test"**
+  * **Why we use it:** Asking an AI to blindly memorize MoSPI manuals leads to severe hallucinations. Instead, ChromaDB acts as an ultra-fast index. When an officer needs a test, we instantly pull the exact 3 relevant paragraphs from the manuals, hand them to the local Llama-3 model, and command it: "Generate questions *only* using this text."
+
+
