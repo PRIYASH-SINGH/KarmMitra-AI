@@ -482,7 +482,24 @@ app.post('/platform/ags/lineitem/competency_assessment/scores', (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
-// 7. AGS GRADE HISTORY API (GET & DELETE /platform/ags/history)
+// 7. OAUTH 2.0 TOKEN ENDPOINT (POST /oauth2/token)
+// -----------------------------------------------------------------------------
+
+/**
+ * Provides a mock OAuth 2.0 access token for LTI Advantage services.
+ * In a real implementation, this validates the JWT client assertion.
+ */
+app.post('/oauth2/token', (req, res) => {
+  console.log('[OAUTH2] Received token request');
+  res.status(200).json({
+    access_token: 'mock-ags-token-' + crypto.randomBytes(16).toString('hex'),
+    token_type: 'Bearer',
+    expires_in: 3600
+  });
+});
+
+// -----------------------------------------------------------------------------
+// 8. AGS GRADE HISTORY API (GET & DELETE /platform/ags/history)
 // -----------------------------------------------------------------------------
 
 /**

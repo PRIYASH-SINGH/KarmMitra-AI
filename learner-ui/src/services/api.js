@@ -9,7 +9,7 @@ import {
 } from '../data/mockData';
 
 // Configurable backend base URL (FastAPI / backend server)
-const BACKEND_BASE_URL = 'http://localhost:8000';
+const BACKEND_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
   baseURL: BACKEND_BASE_URL,
@@ -29,7 +29,19 @@ export function getLearnerProfileFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const userId = params.get('user_id');
   const role = params.get('role');
-  const lineitem = params.get('lineitem');
+  const sessionId = params.get('session_id');
+
+  if (sessionId) {
+    // If launched via LTI, the backend has session claims stored.
+    // The UI should fetch them asynchronously. We inject the session_id
+    // here so the app knows it's an LTI launch context.
+    return {
+      ...DEFAULT_LEARNER,
+      sessionId: sessionId,
+      isFromUrlParams: true,
+      isLtiLaunch: true
+    };
+  }
 
   if (!userId && !role) {
     return DEFAULT_LEARNER;

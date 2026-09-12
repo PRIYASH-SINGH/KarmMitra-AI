@@ -65,3 +65,6 @@ certs/
 
 # LTI Keys
 backend/certs/*.key
+
+docs/
+

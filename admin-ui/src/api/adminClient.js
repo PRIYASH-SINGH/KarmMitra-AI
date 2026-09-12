@@ -5,7 +5,7 @@ import { buildMockAnalytics } from '../data/mockData';
 // point at a different environment; defaults to the local FastAPI gateway
 // used during development.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const ANALYTICS_ENDPOINT = `${API_BASE_URL}/api/v1/admin/analytics`;
+const ANALYTICS_ENDPOINT = `${API_BASE_URL}/api/v1/admin/metrics`;
 
 // Fetches the aggregated admin analytics payload. If the FastAPI gateway is
 // unreachable, falls back to the local demo dataset so the dashboard never

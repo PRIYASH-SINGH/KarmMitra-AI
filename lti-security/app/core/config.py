@@ -1,4 +1,4 @@
-﻿"""
+"""
 LTI 1.3 Security & Bhashini DPI Integration - Configuration Module
 Loads settings from environment variables and .env file via Pydantic Settings.
 """
@@ -22,11 +22,11 @@ class Settings(BaseSettings):
 
     # iGOT Karmayogi Platform LTI 1.3 Configuration
     PLATFORM_ISSUER: str = Field(
-        default="https://igot-karmayogi.gov.in",
+        default="https://igotkarmayogi.gov.in",
         description="Expected 'iss' claim from the platform (e.g. iGOT Karmayogi LMS)"
     )
     PLATFORM_CLIENT_ID: str = Field(
-        default="karmmitra-ai-client-id",
+        default="karmmitra_sih26101_tool",
         description="OAuth2 client_id assigned to this tool on the platform"
     )
     PLATFORM_AUTH_URL: str = Field(
@@ -44,11 +44,11 @@ class Settings(BaseSettings):
 
     # Cryptographic Key Paths (Configurable via ENV, falling back to local certs/ folder)
     PRIVATE_KEY_PATH: str = Field(
-        default="certs/private.key",
+        default="../backend/certs/private.key",
         description="Path to RSA 2048-bit private key PEM file"
     )
     PUBLIC_KEY_PATH: str = Field(
-        default="certs/public.key",
+        default="../backend/certs/public.key",
         description="Path to RSA 2048-bit public key PEM file"
     )
 
