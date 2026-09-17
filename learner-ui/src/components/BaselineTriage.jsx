@@ -131,7 +131,7 @@ export default function BaselineTriage({ questions, onSubmit, onCancel, isSubmit
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <Chip
               icon={<HelpOutlineIcon sx={{ fontSize: '1rem !important' }} />}
-              label={`Mapped Competency: ${currentQuestion.competencyName}`}
+              label={`Mapped Competency: ${currentQuestion.competency_code || currentQuestion.competencyName}`}
               size="small"
               sx={{
                 bgcolor: '#EFF6FF',
@@ -153,7 +153,7 @@ export default function BaselineTriage({ questions, onSubmit, onCancel, isSubmit
               mb: 3,
             }}
           >
-            {currentIndex + 1}. {currentQuestion.question}
+            {currentIndex + 1}. {currentQuestion.questionText || currentQuestion.question}
           </Typography>
 
           <Divider sx={{ mb: 3 }} />
@@ -172,12 +172,13 @@ export default function BaselineTriage({ questions, onSubmit, onCancel, isSubmit
               onChange={(e) => handleOptionSelect(e.target.value)}
             >
               {currentQuestion.options.map((opt) => {
-                const isSelected = currentAnswer === opt.id;
+                const optKey = opt.key || opt.id;
+                const isSelected = currentAnswer === optKey;
                 return (
                   <Paper
-                    key={opt.id}
+                    key={optKey}
                     elevation={0}
-                    onClick={() => handleOptionSelect(opt.id)}
+                    onClick={() => handleOptionSelect(optKey)}
                     sx={{
                       p: 2,
                       mb: 1.5,
@@ -197,7 +198,7 @@ export default function BaselineTriage({ questions, onSubmit, onCancel, isSubmit
                     }}
                   >
                     <FormControlLabel
-                      value={opt.id}
+                      value={optKey}
                       control={
                         <Radio
                           checked={isSelected}
@@ -214,7 +215,7 @@ export default function BaselineTriage({ questions, onSubmit, onCancel, isSubmit
                         <Box sx={{ pl: 0.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Chip
-                              label={opt.id}
+                              label={optKey}
                               size="small"
                               sx={{
                                 height: 22,

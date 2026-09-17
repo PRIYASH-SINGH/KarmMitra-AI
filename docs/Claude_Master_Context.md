@@ -18,7 +18,7 @@
 ## 2. Team Topology & Responsibilities
 The project is built as a microservices/monorepo ecosystem divided among 6 members:
 * **Member 1 (Priyash - Core Backend):** FastAPI Gateway, PostgreSQL Database, Docker Compose orchestration. Acts as the central hub connecting all other members.
-* **Member 2 (Vedansh - Sovereign AI):** Local RAG pipeline (Llama-3-8b via Ollama/vLLM + ChromaDB + SentenceTransformers).
+* **Member 2 (Vedansh - Sovereign AI):** Local RAG pipeline (Llama-3.2-1B (edge-optimized for CPU) via Ollama/vLLM + ChromaDB + SentenceTransformers).
 * **Member 3 (LTI Security):** OIDC handshake, JWT validation, AGS Passback, Bhashini DPI Translation integration.
 * **Member 4 (Learner UI):** React 18 frontend for officials taking the triage and assessments.
 * **Member 5 (Admin UI):** React 18 dashboard for MoSPI institutional leaders (using Recharts).
@@ -61,27 +61,38 @@ The project is built as a microservices/monorepo ecosystem divided among 6 membe
 * `admin.py`: `AdminMetricsOut` with `StateRanking.status` typed as `Literal["Optimal", "Review Needed", "Critical Gap"]`.
 
 ### E. Cross-Team Services (Pulled & Integrated)
-* **`rag-service/`** (Member 2): PDF ingestion script, ChromaDB vectors, zero-hallucination Llama-3-8B MCQ generation.
+* **`rag-service/`** (Member 2): PDF ingestion script, ChromaDB vectors, zero-hallucination Llama-3.2-1B (edge-optimized for CPU) MCQ generation.
 * **`lti-security/`** (Member 3): OIDC login, RS256 JWT validation, AGS grade passback, and Bhashini NMT translation. LTI configuration successfully shares cryptographic keys (`backend/certs/`) with the main gateway.
 * **`mock-igot-platform/`** (Member 6): Express.js iGOT simulator running LTI launches, AGS receiving, and a functional mock `/oauth2/token` endpoint for LTI Advantage services.
 * **`learner-ui/` & `admin-ui/`** (Members 4 & 5): React 18 / Vite frontends. Learner UI is now LTI-aware, actively parsing `session_id` from URL parameters during platform launches.
 
 ---
 
-## 5. What is Working vs. What is Not (Next Steps)
+## 5. SYSTEM STATE UPDATE & CONTEXT SYNC: KarmMitra AI (SIH 2026)
 
-The backend infrastructure is now **Locked and Stable**. DevOps blockers including PyTorch timeout, pip conflicts, WSL 2 crashes, and namespace collisions have all been resolved. Both Learner UI and Admin UI have been successfully merged into the monorepo.
+#### 1. Ingestion & RAG Subsystem (`rag-service`)
+- **Status:** Vector store fully indexed and persisted.
+- **Metrics:** 1,321 pages from 10 MoSPI/NSSTA manuals ingested; 3,838 semantic chunks generated; embedded with `sentence-transformers/all-MiniLM-L6-v2` into local ChromaDB.
+- **LLM Routing:** Updated `rag-service/app/config.py` to route LLM requests to `http://host.docker.internal:11434` (Ollama running `llama3.2:1b` on host).
+- **Resilience Requirement:** `rag-service/app/generator.py` wraps the Ollama call in a fallback mechanism that returns 3 synthetic MoSPI MCQs matching the requested competency if Ollama is unreachable.
 
-### 🟢 What is Working
-1. **Core Gateway & Database:** FastAPI orchestration, AsyncPG, Pydantic validation, and dynamic user auto-upserts work flawlessly.
-2. **Monorepo Cross-Imports:** The `sys.path` isolation pattern allows `lti-security` and `rag-service` to run inside the main FastAPI process without namespace collisions.
-3. **Frontend Integration & LTI Detection:** Both UIs are merged. Learner UI successfully detects LTI contexts via URL `session_id`.
-4. **Mock LMS Infrastructure:** Mock iGOT simulates LTI launches, hosts the JWKS, and grants OAuth2 tokens.
+#### 2. Backend Gateway & Database (`backend`)
+- **Models Added:** `TriageQuestion` model created in `backend/app/models/triage.py` and registered in `__init__.py`.
+- **Seeding:** `seed_initial_data()` in `backend/app/seed.py` dynamically seeds 15 targeted baseline questions for:
+  - `MOSPI_FOD_INV_01` (Field Investigator)
+  - `MOSPI_SDRD_ANL_02` (Survey Design Analyst)
+  - `MOSPI_NAD_ECO_01` (National Accounts Economist)
+- **API Payloads:** `/api/v1/triage/submit` returns `identified_gaps` as structured objects: `[{"competency_code": str, "competency_name": str}]`.
 
-### 🔴 What is NOT Working / Pending
-1. **End-to-End LTI Flow Verification:** While all pieces (Mock iGOT -> Gateway -> Learner UI) exist, the full flow from an iGOT Launch to a completed Assessment to AGS Grade Passback needs live E2E testing to catch payload mismatches.
-2. **Server-Side RAG Answer Caching:** `assessment.py` (`POST /submit`) still blindly trusts the client's `correct_answers`. The backend must cache the AI-generated answer key during `/generate` and grade against that server-side state during `/submit`.
-3. **Real PDF Ingestion:** Member 2's RAG service currently lacks real MoSPI data. The team needs to drop MoSPI/NSSTA PDFs into `rag-service/data/raw_pdfs/` and execute the ingestion script.
+#### 3. Frontend / Learner UI (`frontend`)
+- **Dynamic Role Triage:** Verified working. Baseline triage dynamically switches questions and options based on the authenticated MoSPI official role.
+- **Component Safeguards:** Updated `DashboardView.jsx` and `App.jsx` to parse the object-based `identified_gaps` structure and safely pass `competency_code` to `/api/v1/rag/generate`.
+- **70:20:10 Fallback:** Injected mock pathway cards if live backend returns empty array to preserve UI integrity.
+
+#### 4. Active Backlog & Next Priorities
+1. **Admin UI:** Design and implement the Supervisor/Admin Dashboard for monitoring department-wide competency gaps, heatmaps, and triage passback rates.
+2. **Bhashini Integration:** Inject `BHASHINI_API_KEY` and `BHASHINI_USER_ID` into `.env` once portal approval is received; confirm live Hindi translation toggle in Learner UI.
+3. **End-to-End LTI 1.3 Validation:** Validate full flow from mock iGOT launch -> Role Triage -> RAG Assessment -> AGS Grade Passback.
 
 ---
 

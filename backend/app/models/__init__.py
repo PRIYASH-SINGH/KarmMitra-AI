@@ -14,3 +14,4 @@ INTENT:
 from app.models.frac import FRACRole, RoleCompetencyMapping  # noqa: F401
 from app.models.kcm import KCMCompetency  # noqa: F401
 from app.models.user import OfficialProfile, AssessmentResult  # noqa: F401
+from app.models.triage import TriageQuestion  # noqa: F401

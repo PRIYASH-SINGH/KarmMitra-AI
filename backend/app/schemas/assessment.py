@@ -67,17 +67,21 @@ class TriageSubmitIn(BaseModel):
     )
 
 
+class CompetencyGapOut(BaseModel):
+    competency_code: str
+    competency_name: str
+
 class TriageResultOut(BaseModel):
     """
     INTENT: Response after triage submission. Member 4's onComplete callback
-    uses this to transition from TriageView → DashboardView.
+    uses this to transition from TriageView -> DashboardView.
     """
     user_id: str
     score: float
     status: str = Field(description="completed | error")
-    identified_gaps: List[str] = Field(
+    identified_gaps: List[CompetencyGapOut] = Field(
         default_factory=list,
-        description="KCM competency codes where user scored below threshold"
+        description="KCM competencies where user scored below threshold"
     )
 
 

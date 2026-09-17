@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import theme from './theme/theme';
 import Header from './components/Header';
@@ -44,13 +46,14 @@ export default function App() {
   const [learner, setLearner] = useState(getLearnerProfileFromUrl());
   const [currentScreen, setCurrentScreen] = useState(SCREENS.LANDING);
   const [language, setLanguage] = useState('en');
-  const [isMockMode, setIsMockMode] = useState(true); // Default to standalone offline mode
+  const [isMockMode, setIsMockMode] = useState(false); // Default to live API
 
   // Data states
   const [triageQuestions, setTriageQuestions] = useState([]);
   const [triageResult, setTriageResult] = useState(null);
   const [dynamicQuestions, setDynamicQuestions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState({
@@ -102,17 +105,26 @@ export default function App() {
   // 2. User submits 5-question baseline triage
   const handleSubmitBaseline = async (answers) => {
     setIsSubmitting(true);
-    const payload = {
-      userId: learner.userId,
-      roleCode: learner.roleCode,
-      answers,
-      submittedAt: new Date().toISOString(),
+    // Prepare payload matching TriageSubmitIn Pydantic schema
+    const submissionPayload = {
+      user_id: learner.userId,
+      role_code: learner.roleCode || 'MOSPI_FOD_INV_01',
+      answers: answers // Object format { [qId]: optionKey } matches dict
     };
 
     try {
-      const res = await submitTriageAnswers(payload, isMockMode);
+      const res = await submitTriageAnswers(submissionPayload, isMockMode);
       if (res.success) {
-        setTriageResult(res.data);
+        // Map Live API `TriageResultOut` to the DashboardView expected schema
+        const mappedResult = {
+          ...res.data,
+          overallScore: res.data.score || 0,
+          weakCompetency: {
+            key: res.data.identified_gaps?.[0]?.competency_code || 'STAT_SAMPLING',
+            name: res.data.identified_gaps?.[0]?.competency_name || 'Statistical Sampling'
+          }
+        };
+        setTriageResult(mappedResult);
         setCurrentScreen(SCREENS.DASHBOARD);
         showToast('Baseline Triage Evaluated Successfully!', 'success');
       } else {
@@ -126,13 +138,28 @@ export default function App() {
   };
 
   // 3. User launches Dynamic Assessment for identified weak competency
-  const handleStartDynamicAssessment = async () => {
-    const weakCompKey = triageResult?.weakCompetency?.key || 'STAT_SAMPLING';
-    const weakCompName = triageResult?.weakCompetency?.name || 'Statistical Sampling';
-    const res = await fetchDynamicQuestions(weakCompKey, 3, learner.userId, weakCompName);
-    if (res.success) {
-      setDynamicQuestions(res.data);
-      setCurrentScreen(SCREENS.DYNAMIC_ASSESSMENT);
+  const handleStartDynamicAssessment = async (compKey, compName) => {
+    // If called directly via onClick={...}, compKey might be a MouseEvent object. We ignore it if it's not a string.
+    const validKey = typeof compKey === 'string' ? compKey : null;
+    const validName = typeof compName === 'string' ? compName : null;
+
+    // Read from the live TriageResultOut schema (identified_gaps), fallback to mock schema
+    const weakCompKey = validKey || triageResult?.identified_gaps?.[0]?.competency_code || triageResult?.weakCompetency?.key || 'STAT_SAMPLING';
+    const weakCompName = validName || triageResult?.identified_gaps?.[0]?.competency_name || triageResult?.weakCompetency?.name || weakCompKey;
+    
+    setIsGeneratingAssessment(true);
+    try {
+      const res = await fetchDynamicQuestions(weakCompKey, 3, learner.userId, weakCompName);
+      if (res.success) {
+        setDynamicQuestions(res.data);
+        setCurrentScreen(SCREENS.DYNAMIC_ASSESSMENT);
+      } else {
+        showToast('Failed to generate assessment: ' + res.error, 'error');
+      }
+    } catch (err) {
+      showToast('Error consulting Sovereign AI', 'error');
+    } finally {
+      setIsGeneratingAssessment(false);
     }
   };
 
@@ -156,28 +183,31 @@ export default function App() {
     
     showToast('Translating content via Bhashini NMT...', 'info');
     
-    // Translate Triage Questions
+    // Translate Triage Questions (live key: questionText)
     const translatedTriage = await Promise.all(
       triageQuestions.map(async (q) => {
-        const qRes = await translateText(q.question || q.questionText, 'en', newLang);
+        const sourceText = q.questionText || q.question;
+        const qRes = await translateText(sourceText, 'en', newLang);
         return {
           ...q,
-          question: qRes.success ? qRes.data : (q.question || q.questionText),
-          questionText: qRes.success ? qRes.data : (q.question || q.questionText)
+          questionText: qRes.success ? qRes.data : sourceText,
+          question: qRes.success ? qRes.data : sourceText // keep fallback
         };
       })
     );
     setTriageQuestions(translatedTriage);
 
-    // Translate Dynamic Questions (if any)
+    // Translate Dynamic Questions (live key: question_text)
     if (dynamicQuestions.length > 0) {
       const translatedDynamic = await Promise.all(
         dynamicQuestions.map(async (q) => {
-          const qRes = await translateText(q.question_text || q.questionText || q.question, 'en', newLang);
+          const sourceText = q.question_text || q.questionText || q.question;
+          const qRes = await translateText(sourceText, 'en', newLang);
           return {
             ...q,
-            question_text: qRes.success ? qRes.data : (q.question_text || q.questionText || q.question),
-            questionText: qRes.success ? qRes.data : (q.question_text || q.questionText || q.question)
+            question_text: qRes.success ? qRes.data : sourceText,
+            questionText: qRes.success ? qRes.data : sourceText, // keep fallback
+            question: qRes.success ? qRes.data : sourceText // keep fallback
           };
         })
       );
@@ -328,8 +358,8 @@ export default function App() {
           {currentScreen === SCREENS.DYNAMIC_ASSESSMENT && (
             <AssessmentRunner
               questions={dynamicQuestions}
-              weakCompetencyName={triageResult?.weakCompetency?.name}
-              baselineScore={triageResult?.overallScore}
+              weakCompetencyName={triageResult?.weakCompetency?.name || triageResult?.identified_gaps?.[0]?.competency_name || 'Target Competency'}
+              baselineScore={triageResult?.score || triageResult?.overallScore || 0}
               onReturnToDashboard={() => setCurrentScreen(SCREENS.DASHBOARD)}
               onRetakeDynamicAssessment={handleStartDynamicAssessment}
             />
@@ -402,6 +432,17 @@ export default function App() {
             Built for Ministry of Statistics & Programme Implementation (MoSPI) &bull; Member 4: Learner UI & Dynamic Assessment
           </Typography>
         </Box>
+
+        {/* Global Loading Backdrop for local LLM Wait Times */}
+        <Backdrop
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1, flexDirection: 'column', gap: 2 }}
+          open={isGeneratingAssessment}
+        >
+          <CircularProgress color="inherit" />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Consulting Sovereign MoSPI Knowledge Base...
+          </Typography>
+        </Backdrop>
 
         {/* Toast Snackbar */}
         <Snackbar

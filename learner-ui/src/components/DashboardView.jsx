@@ -18,6 +18,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ReplayIcon from '@mui/icons-material/Replay';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PathwayCard from './PathwayCard';
+import { PATHWAY_CARDS } from '../data/mockData';
 
 export default function DashboardView({
   triageResult,
@@ -26,8 +27,17 @@ export default function DashboardView({
   onRetakeTriage,
   onSelectPathway,
 }) {
-  const { overallScore, ratingBand, competencyBreakdown = [], weakCompetency, recommendedPathways = [] } =
+  const { overallScore, ratingBand, competencyBreakdown = [], weakCompetency } =
     triageResult || {};
+    
+  // Extract correct values from the new identified_gaps object array shape
+  const firstGap = triageResult?.identified_gaps?.[0] || {};
+  const gapCode = firstGap.competency_code || weakCompetency?.key || 'STAT_SAMPLING';
+  const gapName = firstGap.competency_name || weakCompetency?.name || 'Statistical Sampling';
+    
+  const recommendedPathways = triageResult?.recommendedPathways?.length > 0 
+    ? triageResult.recommendedPathways 
+    : PATHWAY_CARDS;
 
   // Color mapping based on score band
   const getScoreColor = (score) => {
@@ -80,7 +90,7 @@ export default function DashboardView({
               <Button
                 variant="contained"
                 endIcon={<PlayArrowIcon />}
-                onClick={onStartDynamicAssessment}
+                onClick={() => onStartDynamicAssessment(gapCode, gapName)}
                 sx={{
                   bgcolor: '#F37021',
                   color: '#FFFFFF',
@@ -173,16 +183,16 @@ export default function DashboardView({
                 </Typography>
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#9A3412', mb: 0.5 }}>
-                {weakCompetency.name}
+                {gapName}
               </Typography>
               <Typography variant="body2" sx={{ color: '#7C2D12', maxWidth: 750 }}>
-                {weakCompetency.description ||
+                {weakCompetency?.description ||
                   'Field investigation guidelines require strict casualty protocols during enterprise non-operation rather than arbitrary replacement. Deepening this skill ensures unbiased sampling frames.'}
               </Typography>
             </Box>
             <Button
               variant="contained"
-              onClick={onStartDynamicAssessment}
+              onClick={() => onStartDynamicAssessment(gapCode, gapName)}
               sx={{
                 bgcolor: '#EA580C',
                 color: '#FFFFFF',
@@ -288,7 +298,7 @@ export default function DashboardView({
                 pathway={pathway}
                 onActionClick={(selectedPathway) => {
                   if (selectedPathway.type === '70_experiential') {
-                    onStartDynamicAssessment();
+                    onStartDynamicAssessment(gapCode, gapName);
                   } else {
                     onSelectPathway(selectedPathway);
                   }

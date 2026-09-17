@@ -32,8 +32,8 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "750"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "150"))
 
 # Local Sovereign LLM configuration (Ollama / vLLM)
-LLM_HOST = os.getenv("LLM_HOST", "http://localhost:11434")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama3:8b")
+LLM_HOST = os.getenv("LLM_HOST", "http://host.docker.internal:11434")
+LLM_MODEL = os.getenv("LLM_MODEL", "llama3.2:1b")
 
 
 def get_device() -> str:

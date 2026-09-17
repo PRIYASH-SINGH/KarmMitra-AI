@@ -13,7 +13,7 @@ const BACKEND_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:
 
 const apiClient = axios.create({
   baseURL: BACKEND_BASE_URL,
-  timeout: 2500, // Quick timeout so UI doesn't hang if backend is offline
+  timeout: 180000, // 60s timeout to allow local LLM inference via RAG
   headers: {
     'Content-Type': 'application/json',
   },
@@ -58,37 +58,27 @@ export function getLearnerProfileFromUrl() {
 }
 
 /**
- * Fetch 5-question baseline triage
+ * Fetch baseline triage questions
  * Calls GET /api/v1/triage/questions?role={roleCode}
- * Falls back to mock data if backend is offline
  */
-export async function fetchTriageQuestions(roleCode, forceMock = false) {
-  if (forceMock) {
-    return {
-      success: true,
-      data: BASELINE_TRIAGE_QUESTIONS,
-      isMock: true,
-      message: 'Loaded via KarmMitra offline mock engine',
-    };
-  }
-
+export async function fetchTriageQuestions(roleCode) {
   try {
     const response = await apiClient.get(`/api/v1/triage/questions`, {
       params: { role: roleCode },
     });
     return {
       success: true,
-      data: response.data?.questions || response.data || BASELINE_TRIAGE_QUESTIONS,
+      data: response.data?.questions || response.data,
       isMock: false,
       message: 'Successfully fetched from live KarmMitra API backend',
     };
   } catch (err) {
-    console.warn('Backend unavailable (http://localhost:8000). Falling back to mock triage data.', err.message);
+    console.error('Backend unavailable (http://localhost:8000). Failed to fetch triage questions.', err.message);
     return {
-      success: true,
-      data: BASELINE_TRIAGE_QUESTIONS,
-      isMock: true,
-      message: 'Backend offline — automatically running in standalone Mock Mode',
+      success: false,
+      error: err.message,
+      data: [],
+      message: 'Failed to fetch live questions from the backend.',
     };
   }
 }
@@ -229,12 +219,13 @@ function calculateLocalTriageResult(payload, isMock = true) {
  */
 export async function fetchDynamicQuestions(weakCompetencyKey = 'STAT_SAMPLING', count = 3, userId = 'mock_user', competencyName = '') {
   try {
-    const response = await apiClient.post(`/api/v1/rag/generate`, {
+    const params = new URLSearchParams({
       user_id: userId,
       competency_code: weakCompetencyKey,
       competency_name: competencyName || weakCompetencyKey,
       question_count: count
     });
+    const response = await apiClient.post(`/api/v1/rag/generate?${params.toString()}`, {}, { timeout: 60000 });
     return {
       success: true,
       data: response.data?.questions || response.data,

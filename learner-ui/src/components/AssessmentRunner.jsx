@@ -89,11 +89,12 @@ export default function AssessmentRunner({
   const calculateScore = () => {
     let correctCount = 0;
     questions.forEach((q) => {
-      if (selectedAnswers[q.id] === q.correctOptionId) {
+      const correctOption = q.correct_option || q.correctOptionId;
+      if (selectedAnswers[q.id] === correctOption) {
         correctCount += 1;
       }
     });
-    const percentage = Math.round((correctCount / totalQuestions) * 100);
+    const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     return { correctCount, totalQuestions, percentage };
   };
 
@@ -142,7 +143,7 @@ export default function AssessmentRunner({
               DYNAMIC ASSESSMENT COMPLETED
             </Typography>
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-              Competency Mastery Achieved
+              {percentage <= (baselineScore || 0) ? 'Further Practice Required' : 'Competency Mastery Achieved'}
             </Typography>
             <Typography variant="body2" sx={{ color: '#CBD5E1', maxWidth: 600, mx: 'auto' }}>
               Targeted skill gap verification for: <strong>{weakCompetencyName || 'Statistical Sampling & Stratification'}</strong>
@@ -222,7 +223,7 @@ export default function AssessmentRunner({
                     </Typography>
                   </Box>
                   <Typography variant="caption" sx={{ color: '#C2410C' }}>
-                    Demonstrated Upskilling
+                    {scoreDiff < 0 ? 'Skill Gap Identified' : 'Demonstrated Upskilling'}
                   </Typography>
                 </Paper>
               </Grid>
@@ -236,11 +237,12 @@ export default function AssessmentRunner({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
               {questions.map((q, idx) => {
                 const userAns = selectedAnswers[q.id];
-                const isCorrect = userAns === q.correctOptionId;
+                const correctOption = q.correct_option || q.correctOptionId;
+                const isCorrect = userAns === correctOption;
 
                 return (
                   <Paper
-                    key={q.id}
+                    key={q.id || idx}
                     sx={{
                       p: 2.5,
                       borderRadius: 2,
@@ -250,7 +252,7 @@ export default function AssessmentRunner({
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0D2E5C' }}>
-                        Q{idx + 1}: {q.question}
+                        Q{idx + 1}: {q.question_text || q.questionText || q.question}
                       </Typography>
                       <Chip
                         label={isCorrect ? 'Correct' : 'Needs Review'}
@@ -266,7 +268,7 @@ export default function AssessmentRunner({
 
                     <Typography variant="body2" sx={{ color: '#475569', mb: 1 }}>
                       <strong>Your Answer:</strong> Option {userAns} &bull;{' '}
-                      <strong>Prescribed Key:</strong> Option {q.correctOptionId}
+                      <strong>Prescribed Key:</strong> Option {correctOption}
                     </Typography>
 
                     <Box sx={{ p: 1.5, bgcolor: '#FFFFFF', borderRadius: 1.5, border: '1px solid #E2E8F0' }}>
@@ -274,7 +276,7 @@ export default function AssessmentRunner({
                         EXPLANATION / DOCTRINE:
                       </Typography>
                       <Typography variant="caption" sx={{ color: '#475569' }}>
-                        {q.explanation}
+                        {q.justification || q.explanation}
                       </Typography>
                     </Box>
                   </Paper>
@@ -446,7 +448,7 @@ export default function AssessmentRunner({
               mb: 3,
             }}
           >
-            {currentIndex + 1}. {currentQuestion.question}
+            {currentIndex + 1}. {currentQuestion.question_text || currentQuestion.questionText || currentQuestion.question}
           </Typography>
 
           <Divider sx={{ mb: 3 }} />
@@ -464,12 +466,13 @@ export default function AssessmentRunner({
               onChange={(e) => handleOptionSelect(e.target.value)}
             >
               {currentQuestion.options.map((opt) => {
-                const isSelected = currentAnswer === opt.id;
+                const optKey = opt.key || opt.id;
+                const isSelected = currentAnswer === optKey;
                 return (
                   <Paper
-                    key={opt.id}
+                    key={optKey}
                     elevation={0}
-                    onClick={() => handleOptionSelect(opt.id)}
+                    onClick={() => handleOptionSelect(optKey)}
                     sx={{
                       p: 2,
                       mb: 1.5,
@@ -488,7 +491,7 @@ export default function AssessmentRunner({
                     }}
                   >
                     <FormControlLabel
-                      value={opt.id}
+                      value={optKey}
                       control={
                         <Radio
                           checked={isSelected}
@@ -505,7 +508,7 @@ export default function AssessmentRunner({
                         <Box sx={{ pl: 0.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Chip
-                              label={opt.id}
+                              label={optKey}
                               size="small"
                               sx={{
                                 height: 22,
