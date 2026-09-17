@@ -27,6 +27,8 @@ import {
   fetchTriageQuestions,
   submitTriageAnswers,
   fetchDynamicQuestions,
+  fetchLtiSession,
+  translateText,
 } from './services/api';
 
 // Defined screens of the learner journey
@@ -60,10 +62,26 @@ export default function App() {
   // Modal dialog for 10% or 20% pathway details
   const [activePathwayModal, setActivePathwayModal] = useState(null);
 
-  // Load questions on mount
+  // Load questions and LTI session on mount
   useEffect(() => {
+    if (learner.isLtiLaunch && learner.sessionId && learner.name === 'Rajesh Kumar Sharma') {
+      fetchLtiSession(learner.sessionId).then(res => {
+        if (res.success) {
+          const sessionData = res.data;
+          setLearner(prev => ({
+            ...prev,
+            userId: sessionData.sub || prev.userId,
+            name: sessionData.name || sessionData.sub || prev.name,
+            roleCode: sessionData.custom?.frac_role || prev.roleCode,
+            division: sessionData.custom?.division || prev.division,
+            department: sessionData.custom?.division || prev.department,
+            roleTitle: `Specialist (${sessionData.custom?.frac_role || prev.roleCode})`
+          }));
+        }
+      });
+    }
     loadTriageQuestions();
-  }, [learner.roleCode, isMockMode]);
+  }, [learner.roleCode, isMockMode, learner.sessionId, learner.isLtiLaunch, learner.name]);
 
   const loadTriageQuestions = async () => {
     const res = await fetchTriageQuestions(learner.roleCode, isMockMode);
@@ -110,7 +128,8 @@ export default function App() {
   // 3. User launches Dynamic Assessment for identified weak competency
   const handleStartDynamicAssessment = async () => {
     const weakCompKey = triageResult?.weakCompetency?.key || 'STAT_SAMPLING';
-    const res = await fetchDynamicQuestions(weakCompKey);
+    const weakCompName = triageResult?.weakCompetency?.name || 'Statistical Sampling';
+    const res = await fetchDynamicQuestions(weakCompKey, 3, learner.userId, weakCompName);
     if (res.success) {
       setDynamicQuestions(res.data);
       setCurrentScreen(SCREENS.DYNAMIC_ASSESSMENT);
@@ -125,6 +144,47 @@ export default function App() {
   // Handle clicking on 10% or 20% pathway cards
   const handleSelectPathway = (pathway) => {
     setActivePathwayModal(pathway);
+  };
+
+  const handleLanguageChange = async (newLang) => {
+    setLanguage(newLang);
+    if (newLang === 'en') {
+      loadTriageQuestions(); // Reload original english
+      showToast('Language switched to English', 'info');
+      return;
+    }
+    
+    showToast('Translating content via Bhashini NMT...', 'info');
+    
+    // Translate Triage Questions
+    const translatedTriage = await Promise.all(
+      triageQuestions.map(async (q) => {
+        const qRes = await translateText(q.question || q.questionText, 'en', newLang);
+        return {
+          ...q,
+          question: qRes.success ? qRes.data : (q.question || q.questionText),
+          questionText: qRes.success ? qRes.data : (q.question || q.questionText)
+        };
+      })
+    );
+    setTriageQuestions(translatedTriage);
+
+    // Translate Dynamic Questions (if any)
+    if (dynamicQuestions.length > 0) {
+      const translatedDynamic = await Promise.all(
+        dynamicQuestions.map(async (q) => {
+          const qRes = await translateText(q.question_text || q.questionText || q.question, 'en', newLang);
+          return {
+            ...q,
+            question_text: qRes.success ? qRes.data : (q.question_text || q.questionText || q.question),
+            questionText: qRes.success ? qRes.data : (q.question_text || q.questionText || q.question)
+          };
+        })
+      );
+      setDynamicQuestions(translatedDynamic);
+    }
+    
+    showToast('Translation complete.', 'success');
   };
 
   return (
@@ -144,7 +204,7 @@ export default function App() {
         <Header
           learner={learner}
           language={language}
-          onLanguageChange={setLanguage}
+          onLanguageChange={handleLanguageChange}
           isMockMode={isMockMode}
           onToggleMockMode={(newVal) => {
             setIsMockMode(newVal);

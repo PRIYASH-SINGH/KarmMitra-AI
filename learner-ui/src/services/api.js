@@ -225,30 +225,56 @@ function calculateLocalTriageResult(payload, isMock = true) {
 
 /**
  * Fetch dynamic follow-up MCQ questions for the weak competency
- * Randomly picks a non-repeating subset of questions from the pool on every attempt.
+ * Calls POST /api/v1/rag/generate
  */
-export async function fetchDynamicQuestions(weakCompetencyKey = 'STAT_SAMPLING', count = 3) {
-  const selectedBank =
-    DYNAMIC_QUESTION_BANK[weakCompetencyKey] ||
-    DYNAMIC_QUESTION_BANK.STAT_SAMPLING ||
-    DYNAMIC_ASSESSMENT_QUESTIONS ||
-    [];
-
-  // Fisher-Yates shuffle algorithm to guarantee a randomized order on every attempt
-  const pool = [...selectedBank];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+export async function fetchDynamicQuestions(weakCompetencyKey = 'STAT_SAMPLING', count = 3, userId = 'mock_user', competencyName = '') {
+  try {
+    const response = await apiClient.post(`/api/v1/rag/generate`, {
+      user_id: userId,
+      competency_code: weakCompetencyKey,
+      competency_name: competencyName || weakCompetencyKey,
+      question_count: count
+    });
+    return {
+      success: true,
+      data: response.data?.questions || response.data,
+    };
+  } catch (err) {
+    console.error('Failed to fetch dynamic questions from RAG:', err);
+    return { success: false, error: err.message };
   }
+}
 
-  // Pick `count` distinct questions from the shuffled pool
-  const randomizedQuestions = pool.slice(0, Math.min(count, pool.length));
+/**
+ * Fetch the LTI session details from the backend
+ */
+export async function fetchLtiSession(sessionId) {
+  try {
+    const response = await apiClient.get(`/lti/session/${sessionId}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (err) {
+    console.error('Failed to fetch LTI session:', err);
+    return { success: false, error: err.message };
+  }
+}
 
-  return {
-    success: true,
-    data: randomizedQuestions,
-    poolSize: selectedBank.length,
-    attemptId: Date.now(),
-  };
+/**
+ * Translate text using Bhashini via backend
+ */
+export async function translateText(text, sourceLanguage = 'en', targetLanguage = 'hi') {
+  try {
+    const response = await apiClient.post(`/lti/translate`, {
+      text,
+      source_language: sourceLanguage,
+      target_language: targetLanguage
+    });
+    return { success: true, data: response.data.translated_text || response.data };
+  } catch (err) {
+    console.error('Failed to translate text:', err);
+    return { success: false, error: err.message, text }; // Fallback to original text on error
+  }
 }
 
