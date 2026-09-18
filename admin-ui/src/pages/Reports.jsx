@@ -27,12 +27,12 @@ function buildReportTable(reportId, analytics) {
     case 'report-state':
       return {
         headers: ['State / UT', 'Assessed Workforce', 'Readiness %', 'Training Completion %', 'Status'],
-        rows: analytics.stateRankings.map((s) => [s.state, s.totalStaff, s.readiness, s.completionRate, s.status]),
+        rows: analytics.stateRankings?.map((s) => [s.state, s.totalStaff, s.readiness, s.completionRate, s.status]),
       };
     case 'report-competency':
       return {
         headers: ['Competency', 'Required', 'Current', 'Gap', 'People Affected'],
-        rows: analytics.kcmCompetencies.map((c) => [
+        rows: analytics.kcmCompetencies?.map((c) => [
           c.subject,
           c.required,
           c.current,
@@ -43,12 +43,12 @@ function buildReportTable(reportId, analytics) {
     case 'report-division':
       return {
         headers: ['Division', 'Proficient', 'Needs Training', 'Readiness %'],
-        rows: analytics.divisionData.map((d) => [d.name, d.proficient, d.needTraining, d.readinessPercent]),
+        rows: analytics.divisionData?.map((d) => [d.name, d.proficient, d.needTraining, d.readinessPercent]),
       };
     case 'report-throughput':
       return {
         headers: ['Month', 'Scheduled', 'Completed', 'Staff Enrolled', 'Staff Completed'],
-        rows: analytics.trainingThroughput.monthly.map((m) => [
+        rows: analytics.trainingThroughput?.monthly?.map((m) => [
           m.month,
           m.scheduled,
           m.completed,
@@ -113,7 +113,7 @@ export default function Reports() {
       />
       <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
         <Grid container spacing={2.5}>
-          {analytics.reports.map((report) => (
+          {(analytics.reports || []).map((report) => (
             <Grid item xs={12} sm={6} md={4} key={report.id}>
               <Card sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <DescriptionOutlinedIcon sx={{ color: 'primary.main', fontSize: 28, mb: 1.5 }} />

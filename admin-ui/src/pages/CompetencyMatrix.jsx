@@ -33,8 +33,8 @@ export default function CompetencyMatrix() {
     );
   }
 
-  const { divisions, rows } = analytics.competencyMatrix;
-  const visibleRows = rows.filter((row) =>
+  const { divisions, rows } = analytics.competencyMatrix || { divisions: [], rows: [] };
+  const visibleRows = (rows || []).filter((row) =>
     row.competency.toLowerCase().includes(search.toLowerCase())
   );
 

@@ -78,7 +78,7 @@ export default function StateReadiness() {
       <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
         <GlobalFilters
           fields={['status']}
-          options={{ status: analytics.filterOptions.statuses }}
+          options={{ status: analytics.filterOptions?.statuses || [] }}
         />
 
         <Card>

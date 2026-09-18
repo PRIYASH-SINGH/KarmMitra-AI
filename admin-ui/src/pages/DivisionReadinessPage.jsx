@@ -55,7 +55,7 @@ export default function DivisionReadinessPage() {
       <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
         <GlobalFilters
           fields={['division']}
-          options={{ division: analytics.filterOptions.divisions.map((d) => d.code) }}
+          options={{ division: (analytics.filterOptions?.divisions || []).map((d) => d.code) }}
         />
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>

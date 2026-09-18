@@ -68,7 +68,7 @@ export default function CompetencyIntelligence() {
       <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
         <GlobalFilters
           fields={['competency']}
-          options={{ competency: analytics.filterOptions.competencies }}
+          options={{ competency: analytics.filterOptions?.competencies || [] }}
         />
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>

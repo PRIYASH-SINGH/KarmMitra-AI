@@ -33,7 +33,7 @@ export function useFilters() {
 
 // Shared helpers so every page filters state/division/status data the same way.
 export function applyStateFilters(rows, filters) {
-  return rows.filter((row) => {
+  return (rows || []).filter((row) => {
     if (filters.state !== 'All' && row.state !== filters.state) return false;
     if (filters.status !== 'All' && row.status !== filters.status) return false;
     if (filters.search && !row.state.toLowerCase().includes(filters.search.toLowerCase())) return false;
@@ -42,14 +42,14 @@ export function applyStateFilters(rows, filters) {
 }
 
 export function applyDivisionFilters(rows, filters) {
-  return rows.filter((row) => {
+  return (rows || []).filter((row) => {
     if (filters.division !== 'All' && row.code !== filters.division) return false;
     return true;
   });
 }
 
 export function applyCompetencyFilters(rows, filters) {
-  return rows.filter((row) => {
+  return (rows || []).filter((row) => {
     if (filters.competency !== 'All' && row.subject !== filters.competency) return false;
     return true;
   });

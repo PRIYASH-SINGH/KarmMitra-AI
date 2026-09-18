@@ -42,22 +42,23 @@ export default function TrainingThroughput() {
     );
   }
 
-  const { kpi, monthly, workshops } = analytics.trainingThroughput;
-  const inProgress = Math.max(kpi.workshopsScheduled - kpi.workshopsCompleted, 0);
+  const { kpi, monthly, workshops } = analytics.trainingThroughput || { kpi: {}, monthly: [], workshops: [] };
+  const inProgress = Math.max(kpi?.workshopsScheduled - kpi?.workshopsCompleted, 0);
 
   const cards = [
     { label: 'Training Planned', value: kpi.workshopsScheduled, description: 'Workshops scheduled this cycle' },
     { label: 'Training In Progress', value: inProgress, description: 'Scheduled, not yet completed' },
-    { label: 'Training Completed', value: kpi.workshopsCompleted, description: `${kpi.staffCompleted.toLocaleString()} staff completed` },
-    { label: 'Completion Rate', value: `${kpi.completionRate}%`, description: `${kpi.staffEnrolled.toLocaleString()} staff enrolled` },
+    { label: 'Training Completed', value: kpi.workshopsCompleted, description: `${kpi.staffCompleted?.toLocaleString()} staff completed` },
+    { label: 'Completion Rate', value: `${kpi.completionRate}%`, description: `${kpi.staffEnrolled?.toLocaleString()} staff enrolled` },
   ];
 
-  const demandByCompetency = [...analytics.kcmCompetencies]
+  const demandByCompetency = [...(analytics.kcmCompetencies || [])]
     .map((c) => ({ subject: c.subject, affectedStaff: c.affectedStaff }))
     .filter((c) => c.affectedStaff > 0)
-    .sort((a, b) => b.affectedStaff - a.affectedStaff);
+    .sort((a, b) => b.affectedStaff - a.affectedStaff)
+    .slice(0, 5);
 
-  const divisionStatus = analytics.divisionData.map((d) => ({
+  const divisionStatus = (analytics.divisionData || []).map((d) => ({
     code: d.code,
     name: d.name,
     readinessPercent: d.readinessPercent,
