@@ -96,7 +96,7 @@ const agsHistory = [];
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ type: ['application/json', 'application/vnd.ims.lis.v1.score+json'] }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 

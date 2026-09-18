@@ -102,14 +102,34 @@ async def submit_assessment(payload: AssessmentSubmitIn, db: AsyncSession = Depe
     # If the user launched via LTI, we have a lineitem URL to send the grade to.
     ags_status = "pending"
     if payload.lineitem_url:
+        import httpx
         try:
-            # Here we would call Member 3's internal passback function/service
-            # e.g., await lti_client.submit_score(...)
-            # For now, simulate success:
-            ags_status = "success"
-            result_record.ags_passback_status = "success"
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    "http://localhost:8000/lti/grade",
+                    json={
+                        "lineitem_url": payload.lineitem_url,
+                        "score": {
+                            "userId": payload.user_id,
+                            "scoreGiven": score,
+                            "scoreMaximum": 100.0,
+                            "comment": f"Scored via RAG for {payload.competency_code}",
+                            "activityProgress": "Completed",
+                            "gradingProgress": "FullyGraded"
+                        }
+                    },
+                    timeout=10.0
+                )
+                if res.status_code == 200 and res.json().get("success"):
+                    ags_status = "success"
+                    result_record.ags_passback_status = "success"
+                else:
+                    ags_status = "failed"
+                    result_record.ags_passback_status = "failed"
             await db.commit()
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.error(f"AGS passback error: {e}")
             ags_status = "failed"
             result_record.ags_passback_status = "failed"
             await db.commit()
