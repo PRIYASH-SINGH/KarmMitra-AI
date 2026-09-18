@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # --- CORS ---
     # Comma-separated string from env; parsed into list below.
-    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:9000"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:9000"
 
     # --- RAG Service (Member 2: Vedansh) ---
     # INTENT: The FastAPI gateway proxies assessment generation requests
