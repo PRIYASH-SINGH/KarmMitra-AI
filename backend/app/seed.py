@@ -16,6 +16,21 @@ async def seed_initial_data():
     the moment `docker compose up` is executed, avoiding manual SQL scripts.
     """
     async with AsyncSessionLocal() as db:
+        print("Ensuring new Technical and Digital Governance competencies are seeded...")
+        new_comps = [
+            KCMCompetency(competency_code="KCM_TECH_DATA_01", name="Data Processing & Statistical Programming (R / Python)", domain="Technical", baseline_threshold=80.0),
+            KCMCompetency(competency_code="KCM_TECH_GIS_02", name="GIS & Spatial Sampling Mapping", domain="Technical", baseline_threshold=75.0),
+            KCMCompetency(competency_code="KCM_GOV_CYBER_01", name="Cybersecurity & Data Privacy in Official Statistics", domain="Digital Governance", baseline_threshold=85.0),
+            KCMCompetency(competency_code="KCM_GOV_EGOV_02", name="e-Governance & Digital Workflow Systems", domain="Digital Governance", baseline_threshold=75.0),
+        ]
+        
+        for nc in new_comps:
+            existing = await db.execute(select(KCMCompetency).where(KCMCompetency.competency_code == nc.competency_code))
+            if not existing.scalars().first():
+                db.add(nc)
+        
+        await db.commit()
+
         # Check if triage questions already exist
         result = await db.execute(select(TriageQuestion).limit(1))
         if result.scalars().first():
