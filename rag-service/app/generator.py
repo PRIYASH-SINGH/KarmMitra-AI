@@ -87,13 +87,13 @@ COMPETENCY NAME: {competency_name}
 COMPETENCY CODE: {competency_code}
 
 =========================================
-CRITICAL ZERO-HALLUCINATION POLICY:
+CRITICAL ZERO-HALLUCINATION POLICY & EXACT COUNT CONSTRAINT:
 =========================================
 1. PURE SOURCE GROUNDING: Every question stem, correct option, and distractor MUST BE SOLELY and EXCLUSIVELY derived from the REFERENCE CONTEXT provided below.
 2. ABSOLUTELY NO OUTSIDE KNOWLEDGE: You are strictly forbidden from utilizing any external knowledge, outside world facts, unmentioned statistical formulas, or assumptions not explicitly present in the text.
 3. If an operational procedure, threshold, or concept is not stated in the reference context, DO NOT ask questions about it.
 4. GROUNDED JUSTIFICATION: Every question must include a 'justification' field that directly quotes or faithfully paraphrases the exact sentence(s) in the REFERENCE CONTEXT supporting the answer.
-5. FORMAT INTEGRITY: Generate exactly {count} questions. Each question MUST contain exactly 4 options with keys "A", "B", "C", "D".
+5. FORMAT INTEGRITY: You MUST generate EXACTLY {count} distinct questions. Generating fewer than {count} questions is a strict failure. Each question MUST contain exactly 4 options with keys "A", "B", "C", "D".
 
 =========================================
 REFERENCE CONTEXT FROM MoSPI / NSSTA MANUALS:
@@ -121,7 +121,7 @@ REQUIRED JSON OUTPUT FORMAT:
   ]
 }}
 
-Return ONLY the raw JSON object conforming strictly to the schema above. Do NOT wrap in markdown code fences (no ```json or ```). Do NOT provide commentary, intro, or outro.
+Return ONLY the raw JSON object conforming strictly to the schema above, containing EXACTLY {count} questions. Do NOT wrap in markdown code fences (no ```json or ```). Do NOT provide commentary, intro, or outro.
 """
 
     async def generate_mcqs(
@@ -134,7 +134,7 @@ Return ONLY the raw JSON object conforming strictly to the schema above. Do NOT 
         """
         POSTs the prompt to the local LLM endpoint ({host}/api/generate), parses the
         resulting JSON response, and validates it against AssessmentPayload.
-        Validation errors are propagated directly to the caller.
+        Validates count. Retries once if the count is wrong or validation fails.
         """
         prompt = self.build_prompt(
             context=context,
@@ -151,31 +151,48 @@ Return ONLY the raw JSON object conforming strictly to the schema above. Do NOT 
             "format": "json",
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=180.0) as client:
-                response = await client.post(url, json=payload)
-                response.raise_for_status()
-                data = response.json()
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=180.0) as client:
+                    response = await client.post(url, json=payload)
+                    response.raise_for_status()
+                    data = response.json()
 
-            raw_response_text = data.get("response", "").strip()
+                raw_response_text = data.get("response", "").strip()
+                print(f"RAW MODEL OUTPUT: {raw_response_text}")
 
-            # Clean optional markdown code blocks if present
-            if raw_response_text.startswith("```"):
-                raw_response_text = re.sub(r"^```(?:json)?\s*", "", raw_response_text)
-                raw_response_text = re.sub(r"\s*```$", "", raw_response_text)
+                if raw_response_text.startswith("```"):
+                    raw_response_text = re.sub(r"^```(?:json)?\s*", "", raw_response_text)
+                    raw_response_text = re.sub(r"\s*```$", "", raw_response_text)
 
-            parsed_json = json.loads(raw_response_text)
+                parsed_json = json.loads(raw_response_text)
 
-            # Accommodate top-level list if LLM returns a list directly
-            if isinstance(parsed_json, list):
-                parsed_json = {"questions": parsed_json}
+                if isinstance(parsed_json, list):
+                    parsed_json = {"questions": parsed_json}
 
-            # Validate with strict Pydantic schema; propagate ValidationError if malformed
-            return AssessmentPayload.model_validate(parsed_json)
-            
-        except Exception as e:
-            # RESILIENCE REQUIREMENT: Fallback mechanism if Ollama is unreachable or parsing fails
-            print(f"[ERROR] LLM Generation Failed: {str(e)}. Returning synthetic MoSPI MCQs as fallback.")
+                assessment = AssessmentPayload.model_validate(parsed_json)
+                
+                # Check strict count
+                if len(assessment.questions) < count:
+                    if attempt == 0:
+                        print(f"Warning: Model generated {len(assessment.questions)} questions instead of {count}. Retrying...")
+                        continue
+                    else:
+                        raise ValueError(f"Insufficient questions generated: {len(assessment.questions)} instead of {count}.")
+                
+                # Ensure we only return exactly `count` (truncate if it generated extra)
+                assessment.questions = assessment.questions[:count]
+                return assessment
+                
+            except Exception as e:
+                if attempt == 0:
+                    print(f"Attempt 1 failed: {str(e)}. Retrying...")
+                    continue
+                else:
+                    print(f"[ERROR] LLM Generation Failed completely: {str(e)}. Returning synthetic MoSPI MCQs as fallback.")
+                    break
+
+        # Fallback mechanism if both attempts fail or Ollama is unreachable
             
             fallback_questions = [
                 GeneratedQuestion(
@@ -216,5 +233,9 @@ Return ONLY the raw JSON object conforming strictly to the schema above. Do NOT 
                 )
             ]
             
-            # Slice to exactly `count` if requested
+            
+            # Pad or slice to exactly `count`
+            while len(fallback_questions) < count:
+                fallback_questions.append(fallback_questions[len(fallback_questions) % 3])
+            
             return AssessmentPayload(questions=fallback_questions[:count])

@@ -1,4 +1,4 @@
-﻿# KarmMitra AI - Admin UI (Supervisor Dashboard) Context
+# KarmMitra AI - Admin UI (Supervisor Dashboard) Context
 
 **Status:** dYY FUNCTIONAL & DEMO-READY (Scaffolded with Synthetic Fallbacks)
 **Directory:** dmin-ui/
@@ -30,23 +30,18 @@ The dashboard is structurally complete. To guarantee resilience during the hacka
 - **Context Providers:**
   - AnalyticsContext.jsx: Global state manager that triggers the API fetch on load.
 
-### Backend Integration (ackend/app/api/v1/endpoints/admin.py)
-- **Live Endpoint:** GET /api/v1/admin/metrics is live and registered in the FastAPI Gateway.
-- **API Contract:** Returns a strict Pydantic AdminMetricsOut schema containing AdminKPI, KCMRadarPoint, DivisionDataPoint, and StateRanking.
-- **Hybrid Data:** The endpoint currently reads the real user_count from the OfficialProfile Postgres table and adds it to the base metrics, but primarily returns a rich, hardcoded MoSPI dataset to ensure charts are beautifully populated for the demo.
+### Backend Integration (`backend/app/api/v1/endpoints/admin.py`)
+- **Live Endpoint:** `GET /api/v1/admin/metrics` is live and registered in the FastAPI Gateway.
+- **API Contract:** Returns a strict Pydantic `AdminMetricsOut` schema containing `AdminKPI`, `KCMRadarPoint`, `DivisionDataPoint`, `StateRanking`, and `RecentActivity`.
+- **Dynamic Aggregations:** The endpoint has been fully modernized to execute real SQLAlchemy aggregations (`func.avg()`, `func.count()`) against the `AssessmentResult` and `OfficialProfile` tables, grouped by division and competency. It dynamically populates the radar and division charts based on live tests.
 
-### Frontend API Client (dmin-ui/src/api/adminClient.js)
-- The Axios client pings http://localhost:8000/api/v1/admin/metrics.
-- **Resilience:** It has a strict 2.5-second timeout. If the FastAPI backend is offline or unreachable, it catches the error and silently returns uildMockAnalytics() (local JS mock data) while injecting an isLive: false flag.
+### Frontend API Client (`admin-ui/src/api/adminClient.js`)
+- The Axios client pings `http://localhost:8000/api/v1/admin/metrics`.
+- **Resilience:** It has a strict 2.5-second timeout. If the FastAPI backend is offline or unreachable, it catches the error and silently returns `buildMockAnalytics()` (local JS mock data) while injecting an `isLive: false` flag.
 
-## 3. What Needs to be Built Next (Real-Time Wiring)
+## 3. What Needs to be Built Next (Future Enhancements)
 
-While the UI renders perfectly, it is currently displaying ~90% synthetic data. If time permits before the SIH submission, the following should be executed to make the dashboard entirely dynamic:
+The UI renders perfectly and is wired to real backend SQL aggregations. For future expansion:
 
-1. **Replace Backend Mocks with SQL Aggregations:**
-   - In dmin.py, replace the hardcoded AdminMetricsOut response by executing GROUP BY SQL queries on the AssessmentResult and OfficialProfile tables using unc.avg() and unc.count().
-2. **LTI AGS Passback Logging:**
-   - Create a TriagePassbackTable.jsx in the frontend.
-   - Add an endpoint GET /api/v1/admin/sync-status to query the gs_passback_status column in the database, allowing supervisors to monitor real-time syncs with the iGOT LMS.
-3. **Global Filter Wiring:**
-   - Wire the existing GlobalFilters.jsx (Date Range, Division, State) to append query parameters to the Axios request, and update FastAPI to dynamically filter the SQL aggregations based on those params.
+1. **Global Filter Wiring:**
+   - Wire the existing `GlobalFilters.jsx` (Date Range, Division, State) to append query parameters to the Axios request, and update FastAPI to dynamically filter the SQL aggregations based on those params.

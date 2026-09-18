@@ -465,78 +465,111 @@ export default function AssessmentRunner({
               value={currentAnswer}
               onChange={(e) => handleOptionSelect(e.target.value)}
             >
-              {currentQuestion.options.map((opt) => {
-                const optKey = opt.key || opt.id;
-                const isSelected = currentAnswer === optKey;
-                return (
-                  <Paper
-                    key={optKey}
-                    elevation={0}
-                    onClick={() => handleOptionSelect(optKey)}
-                    sx={{
-                      p: 2,
-                      mb: 1.5,
-                      borderRadius: 2,
-                      cursor: 'pointer',
-                      border: isSelected
-                        ? '2px solid #EA580C'
-                        : '1px solid #E2E8F0',
-                      bgcolor: isSelected ? '#FFF7ED' : '#FFFFFF',
-                      transition: 'all 0.15s ease-in-out',
-                      '&:hover': {
-                        bgcolor: isSelected ? '#FFEDD5' : '#F8FAFC',
-                      },
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <FormControlLabel
-                      value={optKey}
-                      control={
-                        <Radio
-                          checked={isSelected}
-                          sx={{
-                            color: '#94A3B8',
-                            '&.Mui-checked': {
-                              color: '#EA580C',
-                            },
-                            mt: -0.5,
-                          }}
-                        />
+              {(() => {
+                let normOptions = [];
+                if (Array.isArray(currentQuestion.options)) {
+                  normOptions = currentQuestion.options.map((opt, idx) => {
+                    const key = (typeof opt === 'object' && opt !== null && (opt.key || opt.id)) || String.fromCharCode(65 + idx);
+                    let text = `Option ${key}`;
+                    if (typeof opt === 'string') {
+                      text = opt;
+                    } else if (typeof opt === 'object' && opt !== null) {
+                      const vals = Object.values(opt).filter((v) => typeof v === 'string');
+                      const realText = vals.find(
+                        (v) => v !== key && !/^Option\s+[A-D]\s+text$/i.test(v.trim())
+                      );
+                      if (realText) {
+                        text = realText;
+                      } else {
+                        text = opt.text || opt.label || opt.value || opt.content || opt[key] || `Option ${key}`;
                       }
-                      label={
-                        <Box sx={{ pl: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label={optKey}
-                              size="small"
-                              sx={{
-                                height: 22,
-                                width: 22,
-                                fontWeight: 700,
-                                bgcolor: isSelected ? '#EA580C' : '#E2E8F0',
-                                color: isSelected ? '#FFFFFF' : '#475569',
-                                fontSize: '0.75rem',
-                              }}
-                            />
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: isSelected ? 700 : 500,
-                                color: isSelected ? '#0D2E5C' : '#1E293B',
-                                fontSize: '0.95rem',
-                              }}
-                            >
-                              {opt.text}
-                            </Typography>
+                    }
+                    return { key, text };
+                  });
+                } else if (typeof currentQuestion.options === 'object' && currentQuestion.options !== null) {
+                  normOptions = Object.entries(currentQuestion.options).map(([k, v]) => {
+                    let text = `Option ${k}`;
+                    if (typeof v === 'string') text = v;
+                    else if (typeof v === 'object' && v !== null) {
+                      text = v.text || v.label || v.value || v.content || `Option ${k}`;
+                    }
+                    return { key: k, text };
+                  });
+                }
+
+                return normOptions.map((opt) => {
+                  const optKey = opt.key;
+                  const isSelected = currentAnswer === optKey;
+                  return (
+                    <Paper
+                      key={optKey}
+                      elevation={0}
+                      onClick={() => handleOptionSelect(optKey)}
+                      sx={{
+                        p: 2,
+                        mb: 1.5,
+                        borderRadius: 2,
+                        cursor: 'pointer',
+                        border: isSelected
+                          ? '2px solid #EA580C'
+                          : '1px solid #E2E8F0',
+                        bgcolor: isSelected ? '#FFF7ED' : '#FFFFFF',
+                        transition: 'all 0.15s ease-in-out',
+                        '&:hover': {
+                          bgcolor: isSelected ? '#FFEDD5' : '#F8FAFC',
+                        },
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <FormControlLabel
+                        value={optKey}
+                        control={
+                          <Radio
+                            checked={isSelected}
+                            sx={{
+                              color: '#94A3B8',
+                              '&.Mui-checked': {
+                                color: '#EA580C',
+                              },
+                              mt: -0.5,
+                            }}
+                          />
+                        }
+                        label={
+                          <Box sx={{ pl: 0.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                label={optKey}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  width: 22,
+                                  fontWeight: 700,
+                                  bgcolor: isSelected ? '#EA580C' : '#E2E8F0',
+                                  color: isSelected ? '#FFFFFF' : '#475569',
+                                  fontSize: '0.75rem',
+                                }}
+                              />
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  fontWeight: isSelected ? 700 : 500,
+                                  color: isSelected ? '#0D2E5C' : '#1E293B',
+                                  fontSize: '0.95rem',
+                                }}
+                              >
+                                {opt.text}
+                              </Typography>
+                            </Box>
                           </Box>
-                        </Box>
-                      }
-                      sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
-                    />
-                  </Paper>
-                );
-              })}
+                        }
+                        sx={{ m: 0, width: '100%', alignItems: 'flex-start' }}
+                      />
+                    </Paper>
+                  );
+                });
+              })()}
             </RadioGroup>
           </FormControl>
 

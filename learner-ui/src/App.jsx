@@ -64,6 +64,7 @@ export default function App() {
 
   // Modal dialog for 10% or 20% pathway details
   const [activePathwayModal, setActivePathwayModal] = useState(null);
+  const [isEnrollmentSimulating, setIsEnrollmentSimulating] = useState(false);
 
   // Load questions and LTI session on mount
   useEffect(() => {
@@ -367,51 +368,87 @@ export default function App() {
         </Box>
 
         {/* Modal Dialog for 10% / 20% Pathway details */}
-        <Dialog
-          open={Boolean(activePathwayModal)}
-          onClose={() => setActivePathwayModal(null)}
-          maxWidth="sm"
-          fullWidth
-        >
-          {activePathwayModal && (
-            <>
-              <DialogTitle sx={{ fontWeight: 800, color: '#0D2E5C' }}>
-                {activePathwayModal.title}
-              </DialogTitle>
-              <DialogContent dividers>
-                <Chip
-                  label={activePathwayModal.typeLabel}
-                  size="small"
-                  sx={{ bgcolor: activePathwayModal.badgeColor, color: '#FFFFFF', mb: 2, fontWeight: 700 }}
-                />
+          <Dialog
+            open={Boolean(activePathwayModal)}
+            onClose={() => {
+              setActivePathwayModal(null);
+              setIsEnrollmentSimulating(false);
+            }}
+            maxWidth="sm"
+            fullWidth
+          >
+            {activePathwayModal && !isEnrollmentSimulating && (
+              <>
+                <DialogTitle sx={{ fontWeight: 800, color: '#0D2E5C' }}>
+                  {activePathwayModal.title}
+                </DialogTitle>
+                <DialogContent dividers>
+                  <Chip
+                    label={activePathwayModal.typeLabel}
+                    size="small"
+                    sx={{ bgcolor: activePathwayModal.badgeColor, color: '#FFFFFF', mb: 2, fontWeight: 700 }}
+                  />
+                  <Typography variant="body1" sx={{ color: '#334155', mb: 2 }}>
+                    {activePathwayModal.description}
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', color: '#64748B', mb: 0.5 }}>
+                    <strong>Provider:</strong> {activePathwayModal.provider}
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', color: '#64748B', mb: 0.5 }}>
+                    <strong>Estimated Duration:</strong> {activePathwayModal.estimatedDuration}
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', color: '#64748B', mb: 0.5 }}>
+                    <strong>Mapped Competency:</strong> {activePathwayModal.mappedCompetency} {activePathwayModal.competencyCode ? `(${activePathwayModal.competencyCode})` : ''}
+                  </Typography>
+                  {activePathwayModal.referenceDoc && (
+                    <Typography variant="caption" sx={{ display: 'block', color: '#64748B' }}>
+                      <strong>Reference Material:</strong> {activePathwayModal.referenceDoc}
+                    </Typography>
+                  )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                  <Button onClick={() => setActivePathwayModal(null)} sx={{ color: '#64748B' }}>
+                    Close
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setIsEnrollmentSimulating(true);
+                      setTimeout(() => {
+                        setActivePathwayModal(null);
+                        setIsEnrollmentSimulating(false);
+                        showToast(`Enrollment Registered for iGOT Profile: ${learner.name}. Course pathway mapped to LTI session.`, 'success');
+                      }, 2500);
+                    }}
+                    sx={{ bgcolor: '#0D2E5C', fontWeight: 700 }}
+                  >
+                    Confirm Enrollment
+                  </Button>
+                </DialogActions>
+              </>
+            )}
+            
+            {activePathwayModal && isEnrollmentSimulating && (
+              <Box sx={{ p: 5, textAlign: 'center' }}>
+                <CircularProgress size={48} sx={{ color: '#EA580C', mb: 3 }} />
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0D2E5C', mb: 1 }}>
+                  Confirming Enrollment...
+                </Typography>
                 <Typography variant="body1" sx={{ color: '#334155', mb: 2 }}>
-                  {activePathwayModal.description}
+                  <strong>{activePathwayModal.title}</strong><br/>
+                  <span style={{ fontSize: '0.9rem', color: '#64748B' }}>{activePathwayModal.estimatedDuration}</span>
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block', color: '#64748B', mb: 0.5 }}>
-                  <strong>Provider:</strong> {activePathwayModal.provider}
+                <Chip 
+                  label="Simulating LTI Handoff to iGOT Catalog" 
+                  size="small" 
+                  sx={{ mb: 3, bgcolor: '#F1F5F9', color: '#475569', fontWeight: 600 }} 
+                />
+                <Typography variant="body2" sx={{ color: '#64748B', fontStyle: 'italic' }}>
+                  Redirecting to iGOT Karmayogi...
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block', color: '#64748B' }}>
-                  <strong>Estimated Duration:</strong> {activePathwayModal.estimatedDuration}
-                </Typography>
-              </DialogContent>
-              <DialogActions sx={{ p: 2 }}>
-                <Button onClick={() => setActivePathwayModal(null)} sx={{ color: '#64748B' }}>
-                  Close
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    showToast(`Simulated Enrollment: ${activePathwayModal.title}`, 'success');
-                    setActivePathwayModal(null);
-                  }}
-                  sx={{ bgcolor: '#0D2E5C', fontWeight: 700 }}
-                >
-                  Confirm Enrollment
-                </Button>
-              </DialogActions>
-            </>
-          )}
-        </Dialog>
+              </Box>
+            )}
+          </Dialog>
 
         {/* Footer */}
         <Box

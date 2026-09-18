@@ -297,6 +297,43 @@ async def seed_initial_data():
             q2_1, q2_2, q2_3, q2_4, q2_5,
             q3_1, q3_2, q3_3, q3_4, q3_5
         ])
+        await db.flush()
+
+        # 6. Seed ~25 realistic Assessments for Admin Dashboard SQL aggregations
+        from app.models.user import AssessmentResult
+        import random
+
+        divisions = ["FOD (Field Operations)", "SDRD (Survey Design)", "NAD (National Accounts)", "NSSTA (Training Wing)"]
+        states = ["Uttar Pradesh", "Maharashtra", "Bihar", "Tamil Nadu", "Delhi"]
+        competencies = [comp1, comp2, comp3, comp4, comp5, comp6]
         
+        mock_assessments = []
+        for i in range(1, 26):
+            profile = OfficialProfile(
+                user_id=f"MOSPI_SEED_{i:03d}",
+                name=f"Official {i}",
+                email=f"official{i}@mospi.gov.in",
+                frac_role_code="MOSPI_FOD_INV_01" if i % 2 == 0 else "MOSPI_SDRD_ANL_02",
+                division=random.choice(divisions),
+                state=random.choice(states),
+                triage_completed=True,
+                triage_score=random.uniform(40.0, 95.0)
+            )
+            db.add(profile)
+            
+            # Each user gets 1-2 random assessments
+            for _ in range(random.randint(1, 2)):
+                comp = random.choice(competencies)
+                score = random.uniform(50.0, 100.0)
+                status = random.choice(["success", "success", "success", "pending", "failed"])
+                ar = AssessmentResult(
+                    user_id=profile.user_id,
+                    competency_id=comp.id,
+                    score=score,
+                    ags_passback_status=status
+                )
+                mock_assessments.append(ar)
+
+        db.add_all(mock_assessments)
         await db.commit()
-        print("Initial data seeding completed successfully.")
+        print("Initial data seeding completed successfully with 25+ real assessments for dashboard aggregations.")

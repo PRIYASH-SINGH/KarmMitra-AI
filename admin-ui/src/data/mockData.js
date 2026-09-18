@@ -372,6 +372,7 @@ export const buildMockAnalytics = () => ({
   competencyMatrix: COMPETENCY_MATRIX,
   alerts: GOVERNANCE_ALERTS,
   reports: REPORTS,
+  recentActivity: [],
   filterOptions: {
     states: STATES,
     divisions: DIVISIONS,

@@ -56,12 +56,21 @@ class StateRanking(BaseModel):
     """
     State/UT row for the admin tracking table.
     `status` values match the <Chip> color logic in AdminDashboard.jsx:
-      'Optimal' → primary, 'Review Needed' → warning, 'Critical Gap' → error
+      'Optimal' -> primary, 'Review Needed' -> warning, 'Critical Gap' -> error
     """
     state: str
     totalStaff: int
     completionRate: str = Field(description="Percentage string, e.g., '78%'")
     status: Literal["Optimal", "Review Needed", "Critical Gap"] = Field(description="Optimal | Review Needed | Critical Gap")
+
+
+class RecentActivity(BaseModel):
+    """
+    Recent assessment activity for the live feed.
+    """
+    official_name: str
+    competency_name: str
+    ags_passback_status: str
 
 
 class AdminMetricsOut(BaseModel):
@@ -74,3 +83,4 @@ class AdminMetricsOut(BaseModel):
     kcmRadar: List[KCMRadarPoint]
     divisionData: List[DivisionDataPoint]
     stateRankings: List[StateRanking]
+    recentActivity: List[RecentActivity] = []

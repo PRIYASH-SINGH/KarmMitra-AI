@@ -102,6 +102,8 @@ export default function TopHeader({ onMenuClick, isMobile }) {
           {pageTitle}
         </Typography>
 
+        <Box sx={{ flex: 1 }} />
+
         <Chip
           size="small"
           label={analytics?.isLive ? 'LIVE DATA' : 'DEMO DATA'}
@@ -111,10 +113,9 @@ export default function TopHeader({ onMenuClick, isMobile }) {
             fontWeight: 700,
             fontSize: '0.65rem',
             letterSpacing: '0.04em',
+            mr: 2
           }}
         />
-
-        <Box sx={{ flex: 1 }} />
 
         {lastUpdated && !isMobile && (
           <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>

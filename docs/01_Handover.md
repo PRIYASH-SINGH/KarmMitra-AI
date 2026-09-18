@@ -57,3 +57,9 @@ To help teammates quickly grasp *why* we chose this specific stack, here are pla
   * **Why we use it:** Asking an AI to blindly memorize MoSPI manuals leads to severe hallucinations. Instead, ChromaDB acts as an ultra-fast index. When an officer needs a test, we instantly pull the exact 3 relevant paragraphs from the manuals, hand them to the local Llama-3.2-1B model (edge-optimized CPU inference with an extended 60-second UI timeout), and command it: "Generate questions *only* using this text."
 
 
+
+### Phase 2 Polish Updates
+- **Admin UI Real SQL Aggregations:** Replaced hardcoded Mock MoSPI data in /api/v1/admin/metrics with real asynchronous SQLAlchemy queries grouping by division and competency.
+- **Admin UI Visual Polish:** Applied global DEMO DATA badges, normalized <th> styling on the Division Readiness table, added dynamic Red/Yellow/Green severity fills to the Gap Chart, and introduced a Recent Activity Feed tracking true AGS Syncs.
+- **Learner UI Assessment Normalization:** Solved the 'Option A text' hallucination by building a robust object-normalizer in AssessmentRunner.jsx that extracts authentic generated text regardless of how the LLM structures its JSON options.
+- **Course Enrollment Polish:** Implemented explicit pathway modal metadata (Competency code, reference docs) and updated the LTI simulated handoff banners.

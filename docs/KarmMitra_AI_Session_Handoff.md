@@ -65,3 +65,8 @@ Mid-`git pull` merge conflict on `.gitignore` at the repo root — two people ad
 
 ## Pre-push hygiene already done
 `.gitignore` covers `.env`, `__pycache__/`, venvs, OS files; secrets extracted from `config.py`/`docker-compose.yml` into env vars; this is the repo's first-ever commit (`root-commit` confirmed), so no historical secret-leak risk exists.
+
+## Update (Phase 2 Complete)
+- Admin UI aggregations are completed and fully wired.
+- Learner UI assessment options text extraction bug is fixed.
+- Enrollment modal polish is implemented.

@@ -225,6 +225,7 @@ export async function fetchDynamicQuestions(weakCompetencyKey = 'STAT_SAMPLING',
       competency_name: competencyName || weakCompetencyKey,
       question_count: count
     });
+    console.log("fetchDynamicQuestions params:", Object.fromEntries(params.entries()));
     const response = await apiClient.post(`/api/v1/rag/generate?${params.toString()}`, {}, { timeout: 60000 });
     return {
       success: true,

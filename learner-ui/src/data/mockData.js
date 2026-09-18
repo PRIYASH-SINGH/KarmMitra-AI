@@ -196,6 +196,8 @@ export const PATHWAY_CARDS = [
     icon: 'School',
     title: 'Advanced Sampling Frames & Casualty Protocols (MoSPI Refresher)',
     mappedCompetency: 'Statistical Sampling & Stratification',
+    competencyCode: 'STAT_SAMPLING',
+    referenceDoc: 'MoSPI ASUSE Field Manual',
     estimatedDuration: '45 mins (Interactive e-Module)',
     provider: 'iGOT Karmayogi Bharat Platform',
     actionText: 'Launch e-Learning Module',

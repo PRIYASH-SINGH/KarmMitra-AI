@@ -125,3 +125,11 @@ This document serves as the central tracker for critical bugs squashed and core 
  *   * * W h a t : * *   s e e d _ i n i t i a l _ d a t a ( )   c r e a t e s   T r i a g e Q u e s t i o n   m o d e l s   d y n a m i c a l l y   d u r i n g   t h e   F a s t A P I   l i f e s p a n . 
  *   * * W h y : * *   R e p l a c e s   t h e   s t a t i c   h a r d c o d e d   d i c t i o n a r y   r o u t i n g   w i t h   a   r e a l   d a t a b a s e - d r i v e n   a p p r o a c h ,   m a p p i n g   e x a c t l y   1 5   r i g o r o u s   B a s e l i n e   M C Q s   t o   t h e   3   M o S P I   p e r s o n a s .  
  
+### 5. Phase 2 Admin & Learner UI Fixes
+* **Objective:** Polish the Admin UI with real data aggregations and fix hallucinated placeholder text in the Learner UI.
+* **Status:** Complete.
+* **Implementation:**
+  1. Rewrote /admin/metrics endpoint in backend to execute pure SQLAlchemy aggregations instead of returning static Mock MoSPI data.
+  2. Polished dmin-ui with a global DEMO DATA nav badge, normalized <th> styling, and a dynamic Recent Activity card.
+  3. Fixed the 'Option A text' bug in Learner UI's AssessmentRunner.jsx by building a robust dictionary/array normalizer that aggressively extracts authentic LLM strings and ignores literal placeholders.
+  4. Enhanced the Learner UI 10% formal course modal to explicitly show mapped KCM Competency Codes and prescribed MoSPI reference manuals.

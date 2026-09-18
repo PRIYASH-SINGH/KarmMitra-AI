@@ -35,6 +35,50 @@ const ATTENTION_META = {
 
 const FLOW_STEPS = ['Workforce Readiness', 'Competency Gaps', 'Training Needs', 'Institutional Action'];
 
+function RecentActivityCard({ data }) {
+  return (
+    <Card sx={{ p: 3, height: '100%' }}>
+      <Typography variant="h6" gutterBottom>
+        Recent Activity
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Latest assessments synced from iGOT
+      </Typography>
+      <Divider sx={{ my: 2 }} />
+      {!data || data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          No recent activity found.
+        </Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {data.map((item, i) => (
+            <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {item.official_name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {item.competency_name}
+                </Typography>
+              </Box>
+              <Chip
+                label={item.ags_passback_status === 'success' ? 'Synced' : 'Pending'}
+                size="small"
+                sx={{
+                  bgcolor: item.ags_passback_status === 'success' ? '#E7F3EC' : '#FBF1E0',
+                  color: item.ags_passback_status === 'success' ? '#2E7D5B' : '#B7791F',
+                  fontWeight: 600,
+                  fontSize: '0.65rem',
+                }}
+              />
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Card>
+  );
+}
+
 export default function Overview() {
   const { analytics, loading } = useAnalytics();
   const [activeKpi, setActiveKpi] = useState(null);
@@ -203,8 +247,11 @@ export default function Overview() {
         </Grid>
 
         <Grid container spacing={2.5}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={8}>
             <StateHeatmapTable data={stateRankings} />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <RecentActivityCard data={analytics.recentActivity} />
           </Grid>
         </Grid>
       </Box>
