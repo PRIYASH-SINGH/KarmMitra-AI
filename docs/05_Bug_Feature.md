@@ -144,3 +144,14 @@ This document serves as the central tracker for critical bugs squashed and core 
 * **Symptom:** The edge-optimized LLM frequently returned only 1 MCQ despite explicit question_count=3 system prompts.
 * **Root Cause:** Prompt engineering alone is insufficient to guarantee strict JSON array lengths on edge 1B models.
 * **Resolution:** Implemented a robust padding/truncation fallback in /assessment/generate that injects verified synthetic MoSPI questions to guarantee exactly 3 MCQs every time.
+
+
+### 7. Tier 2: PDF Upload to Quiz Assessment
+* **Objective:** Implement a feature to allow learners to upload a PDF document and instantly receive a 3-question competency quiz derived from its contents.
+* **Status:** Complete.
+* **Implementation:**
+  1. Refactored 
+ag-service to inherently guarantee padding/fallback inside SovereignAIEngine.generate_mcqs.
+  2. Exposed an internal HTTP boundary POST /api/v1/rag/generate-from-text to safely proxy text inputs without sys.path namespace violation.
+  3. Created ackend/app/api/v1/endpoints/upload_assessment.py to extract text securely from 5MB PDFs via pypdf.
+  4. Updated Learner UI DashboardView.jsx to render an 'Upload PDF for Quiz' button and wire the generated questions to the existing AssessmentRunner.

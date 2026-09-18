@@ -1,4 +1,8 @@
-# KarmMitra AI - Admin UI (Supervisor Dashboard) Context
+# KarmMitra AI - Frontend Context
+This file combines context for both the Admin UI and the Learner UI.
+
+## 1. Admin UI (Supervisor Dashboard)
+
 
 **Status:** dYY FUNCTIONAL & DEMO-READY (Scaffolded with Synthetic Fallbacks)
 **Directory:** dmin-ui/
@@ -13,7 +17,8 @@ The dashboard is structurally complete. To guarantee resilience during the hacka
 ## 2. What is Present & Functional
 
 ### Frontend Structure (dmin-ui/)
-- **Routing & Shell:** Uses eact-router-dom with AppLayout.jsx providing a persistent sidebar navigation shell.
+- **Routing & Shell:** Uses 
+eact-router-dom with AppLayout.jsx providing a persistent sidebar navigation shell.
 - **Pages (Fully Scaffolded):**
   - Overview.jsx (Top-level KPIs and summaries)
   - CompetencyIntelligence.jsx
@@ -51,3 +56,20 @@ The UI renders perfectly and is wired to real backend SQL aggregations. For futu
 - **Dynamic SQL Aggregations:** GET /api/v1/admin/metrics no longer relies on hardcoded data, fetching live func.count() and func.avg() aggregates from AssessmentResult.
 - **Recent Activity Feed:** A 5-item recentActivity audit feed now populates from live LTI syncs.
 - **Visual Fixes:** The Division Readiness table headers have been stripped of conflicting CSS, and the Competency Gap chart now displays accurate severity mapping colors.
+
+
+## 2. Learner UI
+
+
+## Overview
+The Learner UI (learner-ui/) is the React frontend handling the officer experience, from baseline triage to 70:20:10 pathway enrollment.
+
+## Tier 1 Polish Achievements
+- **Formal Course Enrollment:** Selecting a 10% Formal Course now triggers a genuine LTI 1.3 redirect simulation overlay. It properly displays a spinner, the authentic course metadata (title, duration, mapped KCM competency), and a redirect message without relying on generic toasts or prohibited iframe embeds. A gracefully provided 'Mock iGOT Launch' button handles the exit.
+- **Dynamic Assessment Rendering:** The UI dynamically renders varying JSON options shapes from the Sovereign AI without falling back to placeholder Option text.
+
+
+## 3. Recent Updates (Tier 2 and Beyond)
+- **Document Upload for Quiz (Learner UI):** Added an 'Upload PDF for Quiz' button to the dashboard that posts a file to the new /api/v1/assessment/generate-from-upload endpoint. The generated questions are routed dynamically into the existing AssessmentRunner.jsx.
+- **Microservice Communication:** The FastAPI Gateway (backend) and the RAG engine (rag-service) communicate over a strictly enforced HTTP boundary (via POST /api/v1/rag/generate-from-text), resolving an earlier path-injection boundary violation.
+
