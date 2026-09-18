@@ -133,3 +133,14 @@ This document serves as the central tracker for critical bugs squashed and core 
   2. Polished dmin-ui with a global DEMO DATA nav badge, normalized <th> styling, and a dynamic Recent Activity card.
   3. Fixed the 'Option A text' bug in Learner UI's AssessmentRunner.jsx by building a robust dictionary/array normalizer that aggressively extracts authentic LLM strings and ignores literal placeholders.
   4. Enhanced the Learner UI 10% formal course modal to explicitly show mapped KCM Competency Codes and prescribed MoSPI reference manuals.
+
+
+### 5. Client-Side Assessment Grading Vulnerability
+* **Symptom:** The /api/v1/assessment/submit endpoint was entirely client-trusted, accepting correct_answers from the frontend payload to calculate grades.
+* **Root Cause:** Placeholder logic from scaffolding phase bypassed server-side validation.
+* **Resolution:** Refactored ackend/app/api/v1/endpoints/assessment.py to maintain a server-side ssessment_keys_cache. The correct answers are extracted during generation and stored, and /submit securely calculates grades solely against this cache.
+
+### 6. Llama 3.2 1B Question Truncation Bug
+* **Symptom:** The edge-optimized LLM frequently returned only 1 MCQ despite explicit question_count=3 system prompts.
+* **Root Cause:** Prompt engineering alone is insufficient to guarantee strict JSON array lengths on edge 1B models.
+* **Resolution:** Implemented a robust padding/truncation fallback in /assessment/generate that injects verified synthetic MoSPI questions to guarantee exactly 3 MCQs every time.

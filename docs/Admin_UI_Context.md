@@ -45,3 +45,9 @@ The UI renders perfectly and is wired to real backend SQL aggregations. For futu
 
 1. **Global Filter Wiring:**
    - Wire the existing `GlobalFilters.jsx` (Date Range, Division, State) to append query parameters to the Axios request, and update FastAPI to dynamically filter the SQL aggregations based on those params.
+
+
+## 4. Tier 1 Polish Achievements (Completed)
+- **Dynamic SQL Aggregations:** GET /api/v1/admin/metrics no longer relies on hardcoded data, fetching live func.count() and func.avg() aggregates from AssessmentResult.
+- **Recent Activity Feed:** A 5-item recentActivity audit feed now populates from live LTI syncs.
+- **Visual Fixes:** The Division Readiness table headers have been stripped of conflicting CSS, and the Competency Gap chart now displays accurate severity mapping colors.

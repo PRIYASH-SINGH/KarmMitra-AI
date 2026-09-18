@@ -94,3 +94,8 @@ To help teammates quickly grasp *why* we chose this specific stack, here are pla
   * **Why we use it:** Asking an AI to blindly memorize MoSPI manuals leads to severe hallucinations. Instead, ChromaDB acts as an ultra-fast index. When an officer needs a test, we instantly pull the exact 3 relevant paragraphs from the manuals, hand them to the local Llama-3.2-1B model, and command it: "Generate questions *only* using this text."
 
 
+
+
+## Tier 1 Architecture Updates
+- **Server-Side Grading Integrity:** Re-architected the ssessment router to employ an in-memory key cache (ssessment_keys_cache), decoupling the grade calculation from frontend trust and eliminating payload spoofing.
+- **Database Seeding Expansion:** The init script now dynamically provisions the Technical and Digital Governance domains idempotently, securing the baseline needed for specialized MoSPI roles.

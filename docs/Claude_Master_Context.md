@@ -102,3 +102,10 @@ The project is built as a microservices/monorepo ecosystem divided among 6 membe
 - Admin dashboard now displays real DB aggregations (Radar Chart, Division Stacked Bar, Recent Activity).
 - Learner UI dynamically parses any JSON object structure for assessment options, dodging the 'Option A text' schema hallucination.
 - Pathway enrollment modal displays true LTI handoff data.
+
+
+## 5. Tier 1 Verified Accomplishments (Pre-Handoff)
+- **Backend & RAG Security:** The /assessment/submit endpoint now grades server-side against an in-memory key cache (client answers are no longer trusted). The /assessment/generate logic guarantees exactly 3 MCQs by padding/truncating the edge LLM output dynamically.
+- **Admin UI Live Telemetry:** GET /api/v1/admin/metrics now executes live unc.count() and unc.avg() SQLAlchemy queries on AssessmentResult. Visual CSS bugs in the Division Readiness table have been resolved, and Competency Gap bars map to true severity colors. A 5-item recent audit feed proves live LTI activity.
+- **Database Seeding:** KCMCompetency dynamically seeds Technical (KCM_TECH_DATA_01, KCM_TECH_GIS_02) and Digital Governance (KCM_GOV_CYBER_01, KCM_GOV_EGOV_02) domains idempotently.
+- **Learner UI Handoff:** The 10% Formal Course enrollment triggers a genuine LTI 1.3 redirect simulation overlay with session metadata, averting cheap iframe embeds and honoring LTI guidelines.
