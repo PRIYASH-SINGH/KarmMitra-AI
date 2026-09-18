@@ -1,0 +1,10 @@
+{
+  "name": "karmmitra-ai-root",
+  "private": true,
+  "scripts": {
+    "dev:all": "concurrently \"npm --prefix learner-ui run dev\" \"npm --prefix admin-ui run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
