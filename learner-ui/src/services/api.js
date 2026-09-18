@@ -219,14 +219,14 @@ function calculateLocalTriageResult(payload, isMock = true) {
  */
 export async function fetchDynamicQuestions(weakCompetencyKey = 'STAT_SAMPLING', count = 3, userId = 'mock_user', competencyName = '') {
   try {
-    const params = new URLSearchParams({
-      user_id: userId,
-      competency_code: weakCompetencyKey,
+    const payload = {
       competency_name: competencyName || weakCompetencyKey,
+      competency_code: weakCompetencyKey,
+      user_id: userId,
       question_count: count
-    });
-    console.log("fetchDynamicQuestions params:", Object.fromEntries(params.entries()));
-    const response = await apiClient.post(`/api/v1/rag/generate?${params.toString()}`, {}, { timeout: 60000 });
+    };
+    console.log("fetchDynamicQuestions payload:", payload);
+    const response = await apiClient.post(`/api/v1/assessment/generate`, payload, { timeout: 60000 });
     return {
       success: true,
       data: response.data?.questions || response.data,
