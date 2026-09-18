@@ -469,29 +469,25 @@ export default function AssessmentRunner({
                 let normOptions = [];
                 if (Array.isArray(currentQuestion.options)) {
                   normOptions = currentQuestion.options.map((opt, idx) => {
-                    const key = (typeof opt === 'object' && opt !== null && (opt.key || opt.id)) || String.fromCharCode(65 + idx);
-                    let text = `Option ${key}`;
+                    const fallbackKey = String.fromCharCode(65 + idx);
+                    let key = fallbackKey;
+                    let text = `Option ${fallbackKey}`;
+                    
                     if (typeof opt === 'string') {
                       text = opt;
                     } else if (typeof opt === 'object' && opt !== null) {
-                      const vals = Object.values(opt).filter((v) => typeof v === 'string');
-                      const realText = vals.find(
-                        (v) => v !== key && !/^Option\s+[A-D]\s+text$/i.test(v.trim())
-                      );
-                      if (realText) {
-                        text = realText;
-                      } else {
-                        text = opt.text || opt.label || opt.value || opt.content || opt[key] || `Option ${key}`;
-                      }
+                      key = opt.key || opt.id || fallbackKey;
+                      text = opt.text || opt.label || opt.value || opt.content || opt[key] || `Option ${key}`;
                     }
                     return { key, text };
                   });
                 } else if (typeof currentQuestion.options === 'object' && currentQuestion.options !== null) {
                   normOptions = Object.entries(currentQuestion.options).map(([k, v]) => {
                     let text = `Option ${k}`;
-                    if (typeof v === 'string') text = v;
-                    else if (typeof v === 'object' && v !== null) {
-                      text = v.text || v.label || v.value || v.content || `Option ${k}`;
+                    if (typeof v === 'string') {
+                      text = v;
+                    } else if (typeof v === 'object' && v !== null) {
+                      text = v.text || v.label || v.value || v.content || v[k] || `Option ${k}`;
                     }
                     return { key: k, text };
                   });
