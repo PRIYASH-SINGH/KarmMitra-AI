@@ -22,6 +22,7 @@ CRITICAL CONTRACT:
 
 from pydantic import BaseModel, Field
 from typing import List, Literal
+from datetime import datetime
 
 
 class AdminKPI(BaseModel):
@@ -69,7 +70,9 @@ class RecentActivity(BaseModel):
     Recent assessment activity for the live feed.
     """
     official_name: str
-    competency_name: str
+    competency_code: str
+    final_score: float
+    timestamp: datetime
     ags_passback_status: str
 
 

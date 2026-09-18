@@ -72,7 +72,9 @@ async def get_admin_metrics(db: AsyncSession = Depends(get_db)):
     recent_query = (
         select(
             OfficialProfile.name.label("official_name"),
-            KCMCompetency.name.label("competency_name"),
+            KCMCompetency.competency_code.label("competency_code"),
+            AssessmentResult.score.label("final_score"),
+            AssessmentResult.completed_at.label("timestamp"),
             AssessmentResult.ags_passback_status
         )
         .join(OfficialProfile, AssessmentResult.user_id == OfficialProfile.user_id)
@@ -84,7 +86,9 @@ async def get_admin_metrics(db: AsyncSession = Depends(get_db)):
     recent_activity = [
         RecentActivity(
             official_name=row.official_name or "Unknown",
-            competency_name=row.competency_name,
+            competency_code=row.competency_code,
+            final_score=float(row.final_score) if row.final_score is not None else 0.0,
+            timestamp=row.timestamp,
             ags_passback_status=row.ags_passback_status
         )
         for row in recent_result.all()
