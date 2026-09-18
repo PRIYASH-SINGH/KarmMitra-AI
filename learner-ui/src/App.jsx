@@ -414,11 +414,6 @@ export default function App() {
                     variant="contained"
                     onClick={() => {
                       setIsEnrollmentSimulating(true);
-                      setTimeout(() => {
-                        setActivePathwayModal(null);
-                        setIsEnrollmentSimulating(false);
-                        showToast(`Enrollment Registered for iGOT Profile: ${learner.name}. Course pathway mapped to LTI session.`, 'success');
-                      }, 2500);
                     }}
                     sx={{ bgcolor: '#0D2E5C', fontWeight: 700 }}
                   >
@@ -432,20 +427,38 @@ export default function App() {
               <Box sx={{ p: 5, textAlign: 'center' }}>
                 <CircularProgress size={48} sx={{ color: '#EA580C', mb: 3 }} />
                 <Typography variant="h5" sx={{ fontWeight: 800, color: '#0D2E5C', mb: 1 }}>
-                  Confirming Enrollment...
+                  Registration confirmed.
                 </Typography>
-                <Typography variant="body1" sx={{ color: '#334155', mb: 2 }}>
-                  <strong>{activePathwayModal.title}</strong><br/>
-                  <span style={{ fontSize: '0.9rem', color: '#64748B' }}>{activePathwayModal.estimatedDuration}</span>
+                <Typography variant="body1" sx={{ color: '#334155', mb: 3 }}>
+                  Redirecting to official iGOT Karmayogi course session via LTI 1.3...
                 </Typography>
-                <Chip 
-                  label="Simulating LTI Handoff to iGOT Catalog" 
-                  size="small" 
-                  sx={{ mb: 3, bgcolor: '#F1F5F9', color: '#475569', fontWeight: 600 }} 
-                />
-                <Typography variant="body2" sx={{ color: '#64748B', fontStyle: 'italic' }}>
-                  Redirecting to iGOT Karmayogi...
-                </Typography>
+                
+                <Box sx={{ bgcolor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 2, p: 3, mb: 4, textAlign: 'left' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#64748B', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Session Metadata
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#0D2E5C', mb: 1 }}>
+                    {activePathwayModal.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#475569', mb: 0.5 }}>
+                    <strong>Estimated Duration:</strong> {activePathwayModal.estimatedDuration}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#475569' }}>
+                    <strong>Mapped Competency:</strong> {activePathwayModal.mappedCompetency} {activePathwayModal.competencyCode ? `(${activePathwayModal.competencyCode})` : ''}
+                  </Typography>
+                </Box>
+                
+                <Button 
+                  variant="outlined" 
+                  onClick={() => {
+                    setActivePathwayModal(null);
+                    setIsEnrollmentSimulating(false);
+                    showToast(`Simulated LTI redirect completed.`, 'success');
+                  }}
+                  sx={{ color: '#0D2E5C', borderColor: '#0D2E5C', fontWeight: 700 }}
+                >
+                  Mock iGOT Launch
+                </Button>
               </Box>
             )}
           </Dialog>
