@@ -75,11 +75,11 @@ export default function DivisionReadinessPage() {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: '#5F6F7A', borderBottom: '2px solid #123B5D' }}>Division</TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: '#5F6F7A', borderBottom: '2px solid #123B5D' }}>Proficient</TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: '#5F6F7A', borderBottom: '2px solid #123B5D' }}>Needs Training</TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: '#5F6F7A', borderBottom: '2px solid #123B5D' }}>Readiness</TableCell>
-                      <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', color: '#5F6F7A', borderBottom: '2px solid #123B5D' }}>Action</TableCell>
+                      <TableCell>Division</TableCell>
+                      <TableCell align="right">Proficient</TableCell>
+                      <TableCell align="right">Needs Training</TableCell>
+                      <TableCell align="right">Readiness</TableCell>
+                      <TableCell align="right">Action</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>

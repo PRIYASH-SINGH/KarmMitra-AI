@@ -42,7 +42,7 @@ export default function CompetencyGapChart({ competencies }) {
             />
             <Bar dataKey="gap" name="Gap (points)" radius={[0, 3, 3, 0]}>
               {data.map((entry) => (
-                <Cell key={entry.subject} fill={entry.gap > 30 ? '#B54747' : entry.gap > 15 ? '#B7791F' : '#2E7D5B'} />
+                <Cell key={entry.subject} fill={entry.gap > 25 ? '#DC2626' : entry.gap >= 10 ? '#F59E0B' : '#0D9488'} />
               ))}
             </Bar>
           </BarChart>
