@@ -51,7 +51,7 @@ function RecentActivityCard({ data }) {
         </Typography>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {data.map((item, i) => (
+          {(data || []).map((item, i) => (
             <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -193,7 +193,7 @@ export default function Overview() {
             Conditions that need institutional attention this cycle
           </Typography>
           <Grid container spacing={2}>
-            {alerts.map((alert) => {
+            {(alerts || []).map((alert) => {
               const Icon = SEVERITY_ICON[alert.severity];
               const meta = ATTENTION_META[alert.linkType] || ATTENTION_META.training;
               return (
@@ -239,19 +239,19 @@ export default function Overview() {
 
         <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid item xs={12} md={6}>
-            <CompetencyRadar data={kcmRadar} />
+            <CompetencyRadar data={kcmRadar || []} />
           </Grid>
           <Grid item xs={12} md={6}>
-            <DivisionReadiness data={divisionData} />
+            <DivisionReadiness data={divisionData || []} />
           </Grid>
         </Grid>
 
         <Grid container spacing={2.5}>
           <Grid item xs={12} md={8}>
-            <StateHeatmapTable data={stateRankings} />
+            <StateHeatmapTable data={stateRankings || []} />
           </Grid>
           <Grid item xs={12} md={4}>
-            <RecentActivityCard data={analytics.recentActivity} />
+            <RecentActivityCard data={analytics?.recentActivity || []} />
           </Grid>
         </Grid>
       </Box>
@@ -268,7 +268,7 @@ export default function Overview() {
               {kpiDetails[activeKpi].summary}
             </Typography>
             <StatRowList
-              rows={kpiDetails[activeKpi].breakdown.map((row) => {
+              rows={(kpiDetails[activeKpi]?.breakdown || []).map((row) => {
                 const unit = kpiDetails[activeKpi].unit;
                 const value =
                   unit === 'percent'
