@@ -1,4 +1,4 @@
-﻿"""
+"""
 LTI 1.3 Assignment and Grade Services (AGS) Passback Client
 Implements OAuth 2.0 client-credentials exchange via signed client assertions (RS256),
 token caching, idempotent grade submission, and robust error handling.
@@ -110,26 +110,43 @@ class AGSClient:
             "scope": f"{SCOPE_AGS_SCORE} {SCOPE_AGS_LINEITEM}"
         }
 
-        logger.info("Requesting AGS access token from %s", settings.PLATFORM_TOKEN_URL)
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                settings.PLATFORM_TOKEN_URL,
-                data=data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+        token_url = settings.PLATFORM_TOKEN_URL or "http://mock-igot:9000/oauth2/token"
+        logger.info("Requesting AGS access token from %s", token_url)
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    token_url,
+                    data=data,
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+        except httpx.ConnectError:
+            # Fallback between Docker network service name and localhost if running in mixed environments
+            fallback_url = (
+                token_url.replace("mock-igot:9000", "localhost:9000")
+                if "mock-igot:9000" in token_url
+                else token_url.replace("localhost:9000", "mock-igot:9000").replace("127.0.0.1:9000", "mock-igot:9000")
             )
-            if resp.status_code != 200:
-                logger.error("Token exchange failed with status %d: %s", resp.status_code, resp.text)
-                raise RuntimeError(f"AGS OAuth2 token request failed: {resp.status_code}")
+            logger.warning("Could not connect to %s; retrying at fallback %s", token_url, fallback_url)
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    fallback_url,
+                    data=data,
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
 
-            token_data = resp.json()
-            access_token = token_data.get("access_token")
-            expires_in = token_data.get("expires_in", 3600)
+        if resp.status_code != 200:
+            logger.error("Token exchange failed with status %d: %s", resp.status_code, resp.text)
+            raise RuntimeError(f"AGS OAuth2 token request failed: {resp.status_code}")
 
-            with self._token_lock:
-                self._cached_token = access_token
-                self._token_expires_at = time.time() + float(expires_in)
-                logger.info("Successfully acquired and cached AGS access token (expires in %ds)", expires_in)
-                return access_token
+        token_data = resp.json()
+        access_token = token_data.get("access_token")
+        expires_in = token_data.get("expires_in", 3600)
+
+        with self._token_lock:
+            self._cached_token = access_token
+            self._token_expires_at = time.time() + float(expires_in)
+            logger.info("Successfully acquired and cached AGS access token (expires in %ds)", expires_in)
+            return access_token
 
     def _compute_dedupe_key(self, lineitem_url: str, score: ScoreSubmission) -> str:
         """Compute an idempotent fingerprint for the grade submission."""
@@ -148,7 +165,7 @@ class AGSClient:
         """
         # Ensure timestamp is set
         if not score.timestamp:
-            score.timestamp = datetime.now(timezone.utc).isoformat()
+            score.timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
         # Idempotency check: detect and prevent double posting
         dedupe_key = self._compute_dedupe_key(lineitem_url, score)
@@ -174,8 +191,25 @@ class AGSClient:
         if not scores_endpoint.endswith("/scores"):
             scores_endpoint = f"{scores_endpoint}/scores"
 
-        # Prepare payload
-        payload = score.model_dump(exclude_none=True)
+        # Route between Docker container network and host if lineitem originated from browser
+        if "mock-igot" in settings.PLATFORM_TOKEN_URL and ("localhost:9000" in scores_endpoint or "127.0.0.1:9000" in scores_endpoint):
+            scores_endpoint = scores_endpoint.replace("://localhost:9000", "://mock-igot:9000").replace("://127.0.0.1:9000", "://mock-igot:9000")
+
+        # Prepare payload matching IMS LTI Advantage AGS "Score" resource spec exactly
+        timestamp_val = score.timestamp or (datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z")
+        if not timestamp_val.endswith("Z") and not ("+" in timestamp_val or "-" in timestamp_val[10:]):
+            timestamp_val = timestamp_val + "Z"
+
+        payload = {
+            "userId": str(score.userId),
+            "scoreGiven": float(score.scoreGiven),
+            "scoreMaximum": float(score.scoreMaximum),
+            "activityProgress": str(score.activityProgress or "Completed"),
+            "gradingProgress": str(score.gradingProgress or "FullyGraded"),
+            "timestamp": timestamp_val,
+        }
+        if score.comment:
+            payload["comment"] = str(score.comment)
 
         try:
             token = await self.get_access_token()
@@ -197,7 +231,18 @@ class AGSClient:
             logger.info("Posting score to %s for user %s (score: %s/%s)",
                         scores_endpoint, score.userId, score.scoreGiven, score.scoreMaximum)
             async with httpx.AsyncClient(timeout=15.0) as client:
-                resp = await client.post(scores_endpoint, json=payload, headers=headers)
+                try:
+                    resp = await client.post(scores_endpoint, json=payload, headers=headers)
+                except httpx.ConnectError:
+                    # Fallback if host resolution differs between docker and host
+                    alt_endpoint = (
+                        scores_endpoint.replace("mock-igot:9000", "localhost:9000")
+                        if "mock-igot:9000" in scores_endpoint
+                        else scores_endpoint.replace("localhost:9000", "mock-igot:9000").replace("127.0.0.1:9000", "mock-igot:9000")
+                    )
+                    logger.warning("Connection failed to %s; retrying at fallback %s", scores_endpoint, alt_endpoint)
+                    resp = await client.post(alt_endpoint, json=payload, headers=headers)
+                    scores_endpoint = alt_endpoint
 
                 if 200 <= resp.status_code < 300:
                     with self._store_lock:

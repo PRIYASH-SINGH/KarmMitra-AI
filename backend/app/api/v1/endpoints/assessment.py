@@ -21,45 +21,6 @@ router = APIRouter()
 # Value: dict mapping str(index) -> correct_option
 assessment_keys_cache = {}
 
-synthetic_fallback = [
-    {
-        "competency_code": "FALLBACK",
-        "question_text": "Synthetic Question 1: Based on standard MoSPI guidelines, what is the primary protocol?",
-        "options": [
-            {"key": "A", "text": "Standard protocol A"},
-            {"key": "B", "text": "Alternative procedure B"},
-            {"key": "C", "text": "Fallback mechanism C"},
-            {"key": "D", "text": "Emergency override D"}
-        ],
-        "correct_option": "A",
-        "justification": "Synthetic fallback justification: Standard protocol A is established in the manual."
-    },
-    {
-        "competency_code": "FALLBACK",
-        "question_text": "Synthetic Question 2: How should anomalies in the sampling frame be documented?",
-        "options": [
-            {"key": "A", "text": "Ignore and proceed"},
-            {"key": "B", "text": "Record detailed observations and escalate to supervisor"},
-            {"key": "C", "text": "Estimate the missing data"},
-            {"key": "D", "text": "Exclude the sample unit completely"}
-        ],
-        "correct_option": "B",
-        "justification": "Synthetic fallback justification: Accurate documentation and escalation is critical."
-    },
-    {
-        "competency_code": "FALLBACK",
-        "question_text": "Synthetic Question 3: Which tool is predominantly utilized for secure field data collection?",
-        "options": [
-            {"key": "A", "text": "CAPI (Computer Assisted Personal Interviewing)"},
-            {"key": "B", "text": "Manual ledger books"},
-            {"key": "C", "text": "Public cloud drives"},
-            {"key": "D", "text": "Unencrypted text messages"}
-        ],
-        "correct_option": "A",
-        "justification": "Synthetic fallback justification: CAPI ensures real-time secure digital data capture."
-    }
-]
-
 @router.post("/generate", response_model=AssessmentGenerateOut)
 async def generate_assessment(payload: AssessmentRequestIn):
     """
@@ -95,17 +56,8 @@ async def generate_assessment(payload: AssessmentRequestIn):
         except Exception as e:
             logging.error(f"Generation attempt {attempt+1} failed: {e}")
             
-    # Pad or trim to exactly payload.question_count
-    if len(questions) > payload.question_count:
-        questions = questions[:payload.question_count]
-    elif len(questions) < payload.question_count:
-        needed = payload.question_count - len(questions)
-        for i in range(needed):
-            idx = len(questions) % len(synthetic_fallback)
-            fallback_q = synthetic_fallback[idx].copy()
-            fallback_q["competency_code"] = payload.competency_code
-            questions.append(fallback_q)
-            
+    # Pad or trim to exactly payload.question_count (Now handled by generator.py natively)
+    
     # Cache the answer key server-side
     cache_key = f"{payload.user_id}_{payload.competency_code}"
     # The frontend usually submits answers keyed by the question index as string
@@ -159,6 +111,8 @@ async def submit_assessment(payload: AssessmentSubmitIn, db: AsyncSession = Depe
     ags_status = "pending"
     if payload.lineitem_url:
         import httpx
+        from datetime import datetime, timezone
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
         try:
             async with httpx.AsyncClient() as client:
                 res = await client.post(
@@ -166,12 +120,13 @@ async def submit_assessment(payload: AssessmentSubmitIn, db: AsyncSession = Depe
                     json={
                         "lineitem_url": payload.lineitem_url,
                         "score": {
-                            "userId": payload.user_id,
-                            "scoreGiven": score,
+                            "userId": str(payload.user_id),
+                            "scoreGiven": float(score),
                             "scoreMaximum": 100.0,
                             "comment": f"Scored via RAG for {payload.competency_code}",
                             "activityProgress": "Completed",
-                            "gradingProgress": "FullyGraded"
+                            "gradingProgress": "FullyGraded",
+                            "timestamp": now_iso
                         }
                     },
                     timeout=10.0

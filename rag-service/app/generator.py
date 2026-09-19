@@ -173,16 +173,40 @@ Return ONLY the raw JSON object conforming strictly to the schema above, contain
                 assessment = AssessmentPayload.model_validate(parsed_json)
                 
                 # Check strict count
-                if len(assessment.questions) < count:
+                questions = assessment.questions
+                if len(questions) > count:
+                    questions = questions[:count]
+                elif len(questions) < count:
                     if attempt == 0:
-                        print(f"Warning: Model generated {len(assessment.questions)} questions instead of {count}. Retrying...")
+                        print(f"Warning: Model generated {len(questions)} questions instead of {count}. Retrying...")
                         continue
                     else:
-                        raise ValueError(f"Insufficient questions generated: {len(assessment.questions)} instead of {count}.")
+                        print(f"Warning: Model generated {len(questions)} questions instead of {count}. Padding with synthetic...")
+                        pass # proceed to pad
                 
-                # Ensure we only return exactly `count` (truncate if it generated extra)
-                assessment.questions = assessment.questions[:count]
-                return assessment
+                # Padding logic
+                needed = count - len(questions)
+                for i in range(needed):
+                    idx = len(questions) % 3
+                    fallback_q = GeneratedQuestion(
+                        competency_code=competency_code,
+                        question_text=f"Synthetic Question {idx+1} for {competency_name}: " + (
+                            "Based on standard MoSPI guidelines, what is the primary protocol?" if idx == 0 else
+                            "How should anomalies in the sampling frame be documented?" if idx == 1 else
+                            "Which tool is predominantly utilized for secure field data collection?"
+                        ),
+                        options=[
+                            MCQOption(key="A", text="Standard protocol A" if idx == 0 else "Ignore and proceed" if idx == 1 else "CAPI (Computer Assisted Personal Interviewing)"),
+                            MCQOption(key="B", text="Alternative procedure B" if idx == 0 else "Record detailed observations and escalate to supervisor" if idx == 1 else "Manual ledger books"),
+                            MCQOption(key="C", text="Fallback mechanism C" if idx == 0 else "Estimate the missing data" if idx == 1 else "Public cloud drives"),
+                            MCQOption(key="D", text="Emergency override D" if idx == 0 else "Exclude the sample unit completely" if idx == 1 else "Unencrypted text messages")
+                        ],
+                        correct_option="A" if idx == 0 else "B" if idx == 1 else "A",
+                        justification="Synthetic fallback justification: Accurate protocol."
+                    )
+                    questions.append(fallback_q)
+                    
+                return AssessmentPayload(questions=questions)
                 
             except Exception as e:
                 if attempt == 0:
@@ -193,49 +217,25 @@ Return ONLY the raw JSON object conforming strictly to the schema above, contain
                     break
 
         # Fallback mechanism if both attempts fail or Ollama is unreachable
-            
-            fallback_questions = [
-                GeneratedQuestion(
-                    competency_code=competency_code,
-                    question_text=f"Synthetic Question 1 for {competency_name}: Based on standard MoSPI guidelines, what is the primary protocol?",
-                    options=[
-                        MCQOption(key="A", text="Standard protocol A"),
-                        MCQOption(key="B", text="Alternative procedure B"),
-                        MCQOption(key="C", text="Fallback mechanism C"),
-                        MCQOption(key="D", text="Emergency override D")
-                    ],
-                    correct_option="A",
-                    justification="Synthetic fallback justification: Standard protocol A is established in the manual."
+        fallback_questions = []
+        for i in range(count):
+            idx = i % 3
+            fallback_q = GeneratedQuestion(
+                competency_code=competency_code,
+                question_text=f"Synthetic Question {idx+1} for {competency_name}: " + (
+                    "Based on standard MoSPI guidelines, what is the primary protocol?" if idx == 0 else
+                    "How should anomalies in the sampling frame be documented?" if idx == 1 else
+                    "Which tool is predominantly utilized for secure field data collection?"
                 ),
-                GeneratedQuestion(
-                    competency_code=competency_code,
-                    question_text=f"Synthetic Question 2 for {competency_name}: How should anomalies in the sampling frame be documented?",
-                    options=[
-                        MCQOption(key="A", text="Ignore and proceed"),
-                        MCQOption(key="B", text="Record detailed observations and escalate to supervisor"),
-                        MCQOption(key="C", text="Estimate the missing data"),
-                        MCQOption(key="D", text="Exclude the sample unit completely")
-                    ],
-                    correct_option="B",
-                    justification="Synthetic fallback justification: Accurate documentation and escalation is critical."
-                ),
-                GeneratedQuestion(
-                    competency_code=competency_code,
-                    question_text=f"Synthetic Question 3 for {competency_name}: Which tool is predominantly utilized for secure field data collection?",
-                    options=[
-                        MCQOption(key="A", text="CAPI (Computer Assisted Personal Interviewing)"),
-                        MCQOption(key="B", text="Manual ledger books"),
-                        MCQOption(key="C", text="Public cloud drives"),
-                        MCQOption(key="D", text="Unencrypted text messages")
-                    ],
-                    correct_option="A",
-                    justification="Synthetic fallback justification: CAPI ensures real-time secure digital data capture."
-                )
-            ]
-            
-            
-            # Pad or slice to exactly `count`
-            while len(fallback_questions) < count:
-                fallback_questions.append(fallback_questions[len(fallback_questions) % 3])
-            
-            return AssessmentPayload(questions=fallback_questions[:count])
+                options=[
+                    MCQOption(key="A", text="Standard protocol A" if idx == 0 else "Ignore and proceed" if idx == 1 else "CAPI (Computer Assisted Personal Interviewing)"),
+                    MCQOption(key="B", text="Alternative procedure B" if idx == 0 else "Record detailed observations and escalate to supervisor" if idx == 1 else "Manual ledger books"),
+                    MCQOption(key="C", text="Fallback mechanism C" if idx == 0 else "Estimate the missing data" if idx == 1 else "Public cloud drives"),
+                    MCQOption(key="D", text="Emergency override D" if idx == 0 else "Exclude the sample unit completely" if idx == 1 else "Unencrypted text messages")
+                ],
+                correct_option="A" if idx == 0 else "B" if idx == 1 else "A",
+                justification="Synthetic fallback justification: Accurate protocol."
+            )
+            fallback_questions.append(fallback_q)
+        
+        return AssessmentPayload(questions=fallback_questions)

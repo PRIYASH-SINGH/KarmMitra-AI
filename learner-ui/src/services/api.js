@@ -270,3 +270,16 @@ export async function translateText(text, sourceLanguage = 'en', targetLanguage 
   }
 }
 
+
+export async function uploadDocumentForAssessment(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const response = await apiClient.post('/api/v1/assessment/generate-from-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return { success: true, data: response.data.questions || response.data };
+  } catch (err) {
+    return { success: false, error: err.response?.data?.detail || err.message };
+  }
+}

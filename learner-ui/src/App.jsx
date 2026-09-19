@@ -31,6 +31,7 @@ import {
   fetchDynamicQuestions,
   fetchLtiSession,
   translateText,
+  uploadDocumentForAssessment,
 } from './services/api';
 
 // Defined screens of the learner journey
@@ -167,6 +168,36 @@ export default function App() {
   // Retake baseline triage
   const handleRetakeTriage = () => {
     setCurrentScreen(SCREENS.BASELINE);
+  };
+
+  const handleUploadDocument = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    setIsGeneratingAssessment(true);
+    try {
+      const res = await uploadDocumentForAssessment(file);
+      if (res.success) {
+        setDynamicQuestions(res.data);
+        // Setting a generic name for the uploaded document assessment
+        if (triageResult) {
+          setTriageResult({
+            ...triageResult,
+            weakCompetency: { name: 'Uploaded Document', key: 'UPLOAD' },
+            identified_gaps: [{ competency_name: 'Uploaded Document', competency_code: 'UPLOAD' }]
+          });
+        }
+        setCurrentScreen(SCREENS.DYNAMIC_ASSESSMENT);
+        showToast('Document analyzed! Quiz generated.', 'success');
+      } else {
+        showToast('Upload failed: ' + res.error, 'error');
+      }
+    } catch (err) {
+      showToast('Error uploading document', 'error');
+    } finally {
+      setIsGeneratingAssessment(false);
+      event.target.value = null; // reset
+    }
   };
 
   // Handle clicking on 10% or 20% pathway cards
@@ -347,13 +378,14 @@ export default function App() {
           )}
 
           {currentScreen === SCREENS.DASHBOARD && (
-            <DashboardView
-              triageResult={triageResult}
-              learner={learner}
-              onStartDynamicAssessment={handleStartDynamicAssessment}
-              onRetakeTriage={handleRetakeTriage}
-              onSelectPathway={handleSelectPathway}
-            />
+              <DashboardView
+                triageResult={triageResult}
+                learner={learner}
+                onStartDynamicAssessment={handleStartDynamicAssessment}
+                onRetakeTriage={handleRetakeTriage}
+                onSelectPathway={handleSelectPathway}
+                onUploadDocument={handleUploadDocument}
+              />
           )}
 
           {currentScreen === SCREENS.DYNAMIC_ASSESSMENT && (

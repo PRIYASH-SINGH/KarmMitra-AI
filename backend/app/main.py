@@ -30,7 +30,9 @@ import logging
 import importlib
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from pydantic import BaseModel
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -232,6 +234,9 @@ app.add_middleware(
 # 1. Core API: /api/v1/triage, /api/v1/pathways, /api/v1/assessment, /api/v1/admin
 app.include_router(api_router, prefix="/api/v1")
 
+from app.api.v1.endpoints.upload_assessment import router as upload_assessment_router
+app.include_router(upload_assessment_router, prefix="/api/v1/assessment", tags=["RAG Assessment Upload"])
+
 # 2. Member 3: LTI 1.3 Handshake & Passback (/lti/login, /lti/launch, /lti/jwks.json, /lti/grade)
 if _lti_router is not None:
     app.include_router(_lti_router)
@@ -259,6 +264,25 @@ if _rag_service is not None and _AssessmentPayload is not None:
             return assessment.model_dump()
         except ValueError as ve:
             raise HTTPException(status_code=404, detail=str(ve))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"RAG generation failed: {str(e)}")
+
+    class GenerateFromTextPayload(BaseModel):
+        context: str
+        competency_name: str = "Uploaded Document"
+        competency_code: str = "UPLOAD"
+        question_count: int = 3
+
+    @app.post("/api/v1/rag/generate-from-text", tags=["RAG Assessment"])
+    async def generate_rag_assessment_from_text(payload: GenerateFromTextPayload):
+        try:
+            assessment = await _rag_service.ai_engine.generate_mcqs(
+                context=payload.context,
+                competency_name=payload.competency_name,
+                competency_code=payload.competency_code,
+                count=payload.question_count,
+            )
+            return assessment.model_dump()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"RAG generation failed: {str(e)}")
 

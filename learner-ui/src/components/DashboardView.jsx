@@ -26,6 +26,7 @@ export default function DashboardView({
   onStartDynamicAssessment,
   onRetakeTriage,
   onSelectPathway,
+  onUploadDocument,
 }) {
   const { overallScore, ratingBand, competencyBreakdown = [], weakCompetency } =
     triageResult || {};
@@ -113,6 +114,19 @@ export default function DashboardView({
                 }}
               >
                 Retake Baseline Triage
+              </Button>
+              <Button
+                component="label"
+                variant="outlined"
+                sx={{
+                  borderColor: '#0D2E5C',
+                  color: '#0D2E5C',
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: '#F8FAFC' },
+                }}
+              >
+                Upload PDF for Quiz
+                <input type="file" hidden accept="application/pdf" onChange={onUploadDocument} />
               </Button>
             </Box>
           </Grid>

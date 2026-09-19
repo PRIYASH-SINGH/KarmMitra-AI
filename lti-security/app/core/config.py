@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         description="OIDC authorization endpoint on the platform"
     )
     PLATFORM_TOKEN_URL: str = Field(
-        default="https://igot-karmayogi.gov.in/oauth2/token",
+        default="http://mock-igot:9000/oauth2/token",
         description="OAuth2 token endpoint on the platform for AGS service token requests"
     )
     PLATFORM_KEYSET_URL: str = Field(
