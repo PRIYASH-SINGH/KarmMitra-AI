@@ -184,23 +184,20 @@ class BhashiniService:
                         degraded_fallback=True
                     )
 
-                # Extract callbackUrl and serviceId from the Udyat response
+                # Extract serviceId from the Udyat response task config
                 task_config = pipeline_resp_config[0].get("config", [{}])[0]
-                callback_url = task_config.get("callbackUrl", "")
                 service_id = task_config.get("serviceId", "")
 
+                # 1. Check root pipelineInferenceAPIEndPoint (standard Bhashini spec)
+                callback_url = config_data.get("pipelineInferenceAPIEndPoint", {}).get("callbackUrl")
+
+                # 2. If still None, check task config
                 if not callback_url:
-                    logger.error(
-                        "Bhashini Udyat response missing 'callbackUrl' in task config: %s. "
-                        "Falling back to mock prefix.", task_config
-                    )
-                    return TranslationResponse(
-                        translated_text=f"[Bhashini Translated]: {text}",
-                        source_language=source_lang,
-                        target_language=target_lang,
-                        cached=False,
-                        degraded_fallback=True
-                    )
+                    callback_url = task_config.get("callbackUrl")
+
+                # 3. Canonical default fallback if not explicitly in response:
+                if not callback_url:
+                    callback_url = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
 
                 # ── Step 2: Dhruva Inference ───────────────────────────────────────
                 # Call the discovered inference endpoint with BHASHINI_INFERENCE_KEY.
