@@ -27,6 +27,7 @@ export default function DashboardView({
   onRetakeTriage,
   onSelectPathway,
   onUploadDocument,
+  uiTranslations = {}
 }) {
   const { overallScore, ratingBand, competencyBreakdown = [], weakCompetency } =
     triageResult || {};
@@ -80,7 +81,7 @@ export default function DashboardView({
             </Box>
 
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#0D2E5C', mb: 1 }}>
-              Personalized Competency Dashboard
+              {uiTranslations.dashboardTitle || 'Personalized Competency Dashboard'}
             </Typography>
             <Typography variant="body1" sx={{ color: '#475569', mb: 2 }}>
               Your baseline triage assessment has been processed. Based on your responses, we have mapped your
@@ -100,7 +101,7 @@ export default function DashboardView({
                   '&:hover': { bgcolor: '#E65100' },
                 }}
               >
-                Launch Dynamic Assessment
+                {uiTranslations.launchAssessmentBtn || 'Launch Dynamic Assessment'}
               </Button>
               <Button
                 variant="outlined"
@@ -113,7 +114,7 @@ export default function DashboardView({
                   '&:hover': { bgcolor: '#F8FAFC' },
                 }}
               >
-                Retake Baseline Triage
+                {uiTranslations.retakeTriageBtn || 'Retake Baseline Triage'}
               </Button>
               <Button
                 component="label"
@@ -125,7 +126,7 @@ export default function DashboardView({
                   '&:hover': { bgcolor: '#F8FAFC' },
                 }}
               >
-                Upload PDF for Quiz
+                {uiTranslations.uploadPdfBtn || 'Upload PDF for Quiz'}
                 <input type="file" hidden accept="application/pdf" onChange={onUploadDocument} />
               </Button>
             </Box>
@@ -188,9 +189,9 @@ export default function DashboardView({
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <Chip
-                  label="IDENTIFIED SKILL GAP"
+                  label={uiTranslations.identifiedSkillGap || 'IDENTIFIED SKILL GAP'}
                   size="small"
-                  sx={{ bgcolor: '#EA580C', color: '#FFFFFF', fontWeight: 800, fontSize: '0.68rem' }}
+                  sx={{ bgcolor: '#EA580C', color: '#FFFFFF', fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase' }}
                 />
                 <Typography variant="caption" sx={{ color: '#9A3412', fontWeight: 700 }}>
                   PRIORITY UP-SKILLING FOCUS
@@ -215,7 +216,7 @@ export default function DashboardView({
                 '&:hover': { bgcolor: '#C2410C' },
               }}
             >
-              Start Practice MCQ &rarr;
+              {uiTranslations.startPracticeBtn || 'Start Practice MCQ'} &rarr;
             </Button>
           </Box>
         </Alert>

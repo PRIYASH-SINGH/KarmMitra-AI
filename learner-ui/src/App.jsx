@@ -66,7 +66,13 @@ export default function App() {
   // UI Translation state
   const [uiTranslations, setUiTranslations] = useState({
     welcomeTitle: 'Welcome',
-    assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
+    assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment. This 5-question diagnostic evaluates your core functional and technical competencies for your assigned cadre role.',
+    dashboardTitle: 'Personalized Competency Dashboard',
+    launchAssessmentBtn: 'Launch Dynamic Assessment',
+    uploadPdfBtn: 'Upload PDF for Quiz',
+    retakeTriageBtn: 'Retake Baseline Triage',
+    identifiedSkillGap: 'Identified Skill Gap',
+    startPracticeBtn: 'Start Practice MCQ'
   });
 
   // Modal dialog for 10% or 20% pathway details
@@ -145,6 +151,40 @@ export default function App() {
     }
   };
 
+  const translateQuestionArray = async (questionsArray, targetLang) => {
+    if (targetLang === 'en') return questionsArray;
+    
+    return await Promise.all(
+      questionsArray.map(async (q) => {
+        const sourceText = q.question_text || q.questionText || q.question;
+        const qRes = await translateText(sourceText, 'en', targetLang);
+        
+        // Translate all options concurrently
+        let translatedOptions = q.options;
+        if (q.options && q.options.length > 0) {
+          translatedOptions = await Promise.all(
+            q.options.map(async (opt) => {
+              const optRes = await translateText(opt.text || opt, 'en', targetLang);
+              if (typeof opt === 'string') return optRes.success ? optRes.data : opt;
+              return {
+                ...opt,
+                text: optRes.success ? optRes.data : opt.text
+              };
+            })
+          );
+        }
+
+        return {
+          ...q,
+          question_text: qRes.success ? qRes.data : sourceText,
+          questionText: qRes.success ? qRes.data : sourceText, // keep fallback
+          question: qRes.success ? qRes.data : sourceText, // keep fallback
+          options: translatedOptions
+        };
+      })
+    );
+  };
+
   // 3. User launches Dynamic Assessment for identified weak competency
   const handleStartDynamicAssessment = async (compKey, compName) => {
     // If called directly via onClick={...}, compKey might be a MouseEvent object. We ignore it if it's not a string.
@@ -159,7 +199,13 @@ export default function App() {
     try {
       const res = await fetchDynamicQuestions(weakCompKey, 3, learner.userId, weakCompName);
       if (res.success) {
-        setDynamicQuestions(res.data);
+        let finalQuestions = res.data;
+        if (language === 'hi') {
+          showToast('Translating assessment into Hindi via Bhashini NMT...', 'info');
+          finalQuestions = await translateQuestionArray(finalQuestions, 'hi');
+          showToast('Translation complete.', 'success');
+        }
+        setDynamicQuestions(finalQuestions);
         setCurrentScreen(SCREENS.DYNAMIC_ASSESSMENT);
       } else {
         showToast('Failed to generate assessment: ' + res.error, 'error');
@@ -184,7 +230,14 @@ export default function App() {
     try {
       const res = await uploadDocumentForAssessment(file);
       if (res.success) {
-        setDynamicQuestions(res.data);
+        let finalQuestions = res.data;
+        if (language === 'hi') {
+          showToast('Translating assessment into Hindi via Bhashini NMT...', 'info');
+          finalQuestions = await translateQuestionArray(finalQuestions, 'hi');
+          showToast('Translation complete.', 'success');
+        }
+        
+        setDynamicQuestions(finalQuestions);
         // Setting a generic name for the uploaded document assessment
         if (triageResult) {
           setTriageResult({
@@ -217,7 +270,13 @@ export default function App() {
       loadTriageQuestions(); // Reload original english
       setUiTranslations({
         welcomeTitle: 'Welcome',
-        assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
+        assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment. This 5-question diagnostic evaluates your core functional and technical competencies for your assigned cadre role.',
+        dashboardTitle: 'Personalized Competency Dashboard',
+        launchAssessmentBtn: 'Launch Dynamic Assessment',
+        uploadPdfBtn: 'Upload PDF for Quiz',
+        retakeTriageBtn: 'Retake Baseline Triage',
+        identifiedSkillGap: 'Identified Skill Gap',
+        startPracticeBtn: 'Start Practice MCQ'
       });
       showToast('Language switched to English', 'info');
       return;
@@ -225,75 +284,27 @@ export default function App() {
     
     showToast('Translating content via Bhashini NMT...', 'info');
     
-    // Translate static UI text
-    const [welcomeRes, overviewRes] = await Promise.all([
-      translateText('Welcome', 'en', newLang),
-      translateText('Initiate your personalized KarmMitra AI Baseline Triage Assessment.', 'en', newLang)
-    ]);
-    
-    setUiTranslations({
-      welcomeTitle: welcomeRes.success ? welcomeRes.data : 'Welcome',
-      assessmentOverview: overviewRes.success ? overviewRes.data : 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
-    });
+    // Set static UI text (using provided canonical Hindi translations)
+    if (newLang === 'hi') {
+      setUiTranslations({
+        welcomeTitle: 'स्वागत है',
+        assessmentOverview: 'अपना व्यक्तिगत कर्ममित्र एआई बेसलाइन ट्राइएज मूल्यांकन शुरू करें। यह 5-प्रश्न निदान आपकी निर्दिष्ट कैडर भूमिका के लिए आपकी मुख्य कार्यात्मक और तकनीकी दक्षताओं का मूल्यांकन करता है।',
+        dashboardTitle: 'व्यक्तिगत योग्यता डैशबोर्ड',
+        launchAssessmentBtn: 'डायनामिक असेसमेंट शुरू करें',
+        uploadPdfBtn: 'क्विज़ के लिए पीडीएफ अपलोड करें',
+        retakeTriageBtn: 'बेसलाइन ट्राइएज पुनः लें',
+        identifiedSkillGap: 'पहचाना गया कौशल अंतर',
+        startPracticeBtn: 'अभ्यास प्रश्न शुरू करें'
+      });
+    }
 
-    // Translate Triage Questions (live key: questionText)
-    const translatedTriage = await Promise.all(
-      triageQuestions.map(async (q) => {
-        const sourceText = q.questionText || q.question;
-        const qRes = await translateText(sourceText, 'en', newLang);
-        
-        // Translate all options concurrently
-        const translatedOptions = await Promise.all(
-          q.options.map(async (opt) => {
-            const optRes = await translateText(opt.text, 'en', newLang);
-            return {
-              ...opt,
-              text: optRes.success ? optRes.data : opt.text
-            };
-          })
-        );
-
-        return {
-          ...q,
-          questionText: qRes.success ? qRes.data : sourceText,
-          question: qRes.success ? qRes.data : sourceText, // keep fallback
-          options: translatedOptions
-        };
-      })
-    );
+    // Translate Triage Questions
+    const translatedTriage = await translateQuestionArray(triageQuestions, newLang);
     setTriageQuestions(translatedTriage);
 
-    // Translate Dynamic Questions (live key: question_text)
+    // Translate Dynamic Questions
     if (dynamicQuestions.length > 0) {
-      const translatedDynamic = await Promise.all(
-        dynamicQuestions.map(async (q) => {
-          const sourceText = q.question_text || q.questionText || q.question;
-          const qRes = await translateText(sourceText, 'en', newLang);
-          
-          // Translate all options concurrently
-          let translatedOptions = q.options;
-          if (q.options && q.options.length > 0) {
-            translatedOptions = await Promise.all(
-              q.options.map(async (opt) => {
-                const optRes = await translateText(opt.text || opt, 'en', newLang);
-                if (typeof opt === 'string') return optRes.success ? optRes.data : opt;
-                return {
-                  ...opt,
-                  text: optRes.success ? optRes.data : opt.text
-                };
-              })
-            );
-          }
-
-          return {
-            ...q,
-            question_text: qRes.success ? qRes.data : sourceText,
-            questionText: qRes.success ? qRes.data : sourceText, // keep fallback
-            question: qRes.success ? qRes.data : sourceText, // keep fallback
-            options: translatedOptions
-          };
-        })
-      );
+      const translatedDynamic = await translateQuestionArray(dynamicQuestions, newLang);
       setDynamicQuestions(translatedDynamic);
     }
     
@@ -429,15 +440,19 @@ export default function App() {
             />
           )}
 
-          {currentScreen === SCREENS.DASHBOARD && (
-              <DashboardView
-                triageResult={triageResult}
-                learner={learner}
-                onStartDynamicAssessment={handleStartDynamicAssessment}
-                onRetakeTriage={handleRetakeTriage}
-                onSelectPathway={handleSelectPathway}
-                onUploadDocument={handleUploadDocument}
-              />
+          {currentScreen === SCREENS.DASHBOARD && triageResult && (
+            <DashboardView
+              triageResult={triageResult}
+              learner={learner}
+              onStartDynamicAssessment={handleStartDynamicAssessment}
+              onUploadDocument={handleUploadDocument}
+              onRetakeTriage={() => {
+                setTriageResult(null);
+                setCurrentScreen(SCREENS.LANDING);
+              }}
+              onSelectPathway={() => {}} // Additional functionality mock
+              uiTranslations={uiTranslations}
+            />
           )}
 
           {currentScreen === SCREENS.DYNAMIC_ASSESSMENT && (

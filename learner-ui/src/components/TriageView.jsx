@@ -66,9 +66,7 @@ export default function TriageView({ learner, onStartAssessment, isMockMode, uiT
               {uiTranslations.welcomeTitle || 'Welcome'}, {learner?.name || 'Officer'}
             </Typography>
             <Typography variant="body1" sx={{ color: '#E2E8F0', mb: 2, maxWidth: 600 }}>
-              {uiTranslations.assessmentOverview || 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'}
-              This 5-question diagnostic evaluates your core functional and technical competencies 
-              for your assigned cadre role.
+              {uiTranslations.assessmentOverview || 'Initiate your personalized KarmMitra AI Baseline Triage Assessment. This 5-question diagnostic evaluates your core functional and technical competencies for your assigned cadre role.'}
             </Typography>
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
