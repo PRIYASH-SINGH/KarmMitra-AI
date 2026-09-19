@@ -63,6 +63,12 @@ export default function App() {
     severity: 'info',
   });
 
+  // UI Translation state
+  const [uiTranslations, setUiTranslations] = useState({
+    welcomeTitle: 'Welcome',
+    assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
+  });
+
   // Modal dialog for 10% or 20% pathway details
   const [activePathwayModal, setActivePathwayModal] = useState(null);
   const [isEnrollmentSimulating, setIsEnrollmentSimulating] = useState(false);
@@ -209,21 +215,49 @@ export default function App() {
     setLanguage(newLang);
     if (newLang === 'en') {
       loadTriageQuestions(); // Reload original english
+      setUiTranslations({
+        welcomeTitle: 'Welcome',
+        assessmentOverview: 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
+      });
       showToast('Language switched to English', 'info');
       return;
     }
     
     showToast('Translating content via Bhashini NMT...', 'info');
     
+    // Translate static UI text
+    const [welcomeRes, overviewRes] = await Promise.all([
+      translateText('Welcome', 'en', newLang),
+      translateText('Initiate your personalized KarmMitra AI Baseline Triage Assessment.', 'en', newLang)
+    ]);
+    
+    setUiTranslations({
+      welcomeTitle: welcomeRes.success ? welcomeRes.data : 'Welcome',
+      assessmentOverview: overviewRes.success ? overviewRes.data : 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'
+    });
+
     // Translate Triage Questions (live key: questionText)
     const translatedTriage = await Promise.all(
       triageQuestions.map(async (q) => {
         const sourceText = q.questionText || q.question;
         const qRes = await translateText(sourceText, 'en', newLang);
+        
+        // Translate all options concurrently
+        const translatedOptions = await Promise.all(
+          q.options.map(async (opt) => {
+            const optRes = await translateText(opt.text, 'en', newLang);
+            return {
+              ...opt,
+              text: optRes.success ? optRes.data : opt.text
+            };
+          })
+        );
+
         return {
           ...q,
           questionText: qRes.success ? qRes.data : sourceText,
-          question: qRes.success ? qRes.data : sourceText // keep fallback
+          question: qRes.success ? qRes.data : sourceText, // keep fallback
+          options: translatedOptions
         };
       })
     );
@@ -235,11 +269,28 @@ export default function App() {
         dynamicQuestions.map(async (q) => {
           const sourceText = q.question_text || q.questionText || q.question;
           const qRes = await translateText(sourceText, 'en', newLang);
+          
+          // Translate all options concurrently
+          let translatedOptions = q.options;
+          if (q.options && q.options.length > 0) {
+            translatedOptions = await Promise.all(
+              q.options.map(async (opt) => {
+                const optRes = await translateText(opt.text || opt, 'en', newLang);
+                if (typeof opt === 'string') return optRes.success ? optRes.data : opt;
+                return {
+                  ...opt,
+                  text: optRes.success ? optRes.data : opt.text
+                };
+              })
+            );
+          }
+
           return {
             ...q,
             question_text: qRes.success ? qRes.data : sourceText,
             questionText: qRes.success ? qRes.data : sourceText, // keep fallback
-            question: qRes.success ? qRes.data : sourceText // keep fallback
+            question: qRes.success ? qRes.data : sourceText, // keep fallback
+            options: translatedOptions
           };
         })
       );
@@ -365,6 +416,7 @@ export default function App() {
               learner={learner}
               onStartAssessment={handleStartBaseline}
               isMockMode={isMockMode}
+              uiTranslations={uiTranslations}
             />
           )}
 

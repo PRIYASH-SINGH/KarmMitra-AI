@@ -22,7 +22,7 @@ import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
 
-export default function TriageView({ learner, onStartAssessment, isMockMode }) {
+export default function TriageView({ learner, onStartAssessment, isMockMode, uiTranslations = {} }) {
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', p: { xs: 2, md: 4 } }}>
       {/* Welcome Hero Banner */}
@@ -63,10 +63,10 @@ export default function TriageView({ learner, onStartAssessment, isMockMode }) {
               }}
             />
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1.5, lineHeight: 1.2 }}>
-              Welcome, {learner?.name || 'Officer'}
+              {uiTranslations.welcomeTitle || 'Welcome'}, {learner?.name || 'Officer'}
             </Typography>
             <Typography variant="body1" sx={{ color: '#E2E8F0', mb: 2, maxWidth: 600 }}>
-              Initiate your personalized <strong>KarmMitra AI Baseline Triage Assessment</strong>. 
+              {uiTranslations.assessmentOverview || 'Initiate your personalized KarmMitra AI Baseline Triage Assessment.'}
               This 5-question diagnostic evaluates your core functional and technical competencies 
               for your assigned cadre role.
             </Typography>
