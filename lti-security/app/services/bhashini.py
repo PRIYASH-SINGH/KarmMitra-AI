@@ -2,6 +2,15 @@
 Bhashini DPI (Digital Public Infrastructure) NMT Translation Service
 Provides asynchronous text translation with LRU in-memory caching,
 observable error logging, and resilient fallback to source text.
+
+Live API Architecture (Two-Step Pipeline):
+  Step 1 — Udyat modelConfigSearch: POST to BHASHINI_PIPELINE_CONFIG_URL
+            authenticated with BHASHINI_USER_ID + BHASHINI_UDYAT_KEY.
+            Returns the dynamic service endpoint and model config for the
+            requested language pair.
+  Step 2 — Dhruva Inference: POST to the discovered callbackUrl
+            authenticated with BHASHINI_INFERENCE_KEY as the Authorization header.
+            Returns the translated text in pipelineResponse[0].output[0].target.
 """
 
 import logging
@@ -32,8 +41,16 @@ class TranslationResponse(BaseModel):
 class BhashiniService:
     """
     Client for Bhashini Dhruva NMT (Neural Machine Translation) Pipeline.
+
+    Implements the live two-step API:
+      1. Call Udyat (modelConfigSearch) with BHASHINI_UDYAT_KEY to discover the
+         dynamic inference callbackUrl and pipelineId for the language pair.
+      2. Call the discovered Dhruva inference endpoint with BHASHINI_INFERENCE_KEY
+         as the Authorization bearer to get the translated text.
+
     Supports in-memory caching for repeated UI and quiz strings, and graceful
-    fallback to original source text on API/network failures.
+    fallback to '[Bhashini Translated]: <original>' on any API/network failure —
+    matching the zero-risk contract of the backend mock service.
     """
 
     def __init__(self, cache_maxsize: int = 10000):
@@ -61,10 +78,12 @@ class BhashiniService:
         target_lang: str = "hi"
     ) -> TranslationResponse:
         """
-        Translate text from source_lang to target_lang.
+        Translate text from source_lang to target_lang using the live Bhashini API.
+
         If source == target or text is empty, returns original text immediately.
-        If API fails (timeout, non-200, malformed response, missing credentials),
-        falls back to returning original text without raising exceptions.
+        If API credentials are absent, returns '[Bhashini Translated]: <text>' (mock mode).
+        If the live API fails at any point (timeout, non-200, malformed response),
+        returns '[Bhashini Translated]: <text>' without raising — zero-risk fallback.
         """
         stripped_text = text.strip()
         if not stripped_text or source_lang.lower() == target_lang.lower():
@@ -88,11 +107,11 @@ class BhashiniService:
                 degraded_fallback=False
             )
 
-        # 2. Check if API credentials are configured (SIH Mock Fallback)
-        if not settings.BHASHINI_API_KEY or not settings.BHASHINI_USER_ID:
+        # 2. Check if live API credentials are configured — fallback to mock prefix if absent
+        if not settings.BHASHINI_UDYAT_KEY or not settings.BHASHINI_INFERENCE_KEY or not settings.BHASHINI_USER_ID:
             logger.info(
-                "SIH Note: Bhashini API integration architecture is structurally complete. "
-                "Running in mock mode pending official MoSPI API key approval for '%s'.", stripped_text[:30]
+                "Bhashini live credentials not configured (BHASHINI_UDYAT_KEY / BHASHINI_INFERENCE_KEY). "
+                "Running in mock-prefix mode for '%s'.", stripped_text[:30]
             )
             return TranslationResponse(
                 translated_text=f"[Bhashini Translated]: {text}",
@@ -102,63 +121,146 @@ class BhashiniService:
                 degraded_fallback=True
             )
 
-        # 3. Construct ULCA/Bhashini Pipeline Request
-        payload = {
-            "pipelineTasks": [
-                {
-                    "taskType": "translation",
-                    "config": {
-                        "language": {
-                            "sourceLanguage": source_lang.lower(),
-                            "targetLanguage": target_lang.lower()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # ── Step 1: Udyat modelConfigSearch ───────────────────────────────
+                # Fetch the dynamic pipeline config (callbackUrl + pipelineId) for
+                # the requested language pair using the Udyat key.
+                config_payload = {
+                    "pipelineTasks": [
+                        {
+                            "taskType": "translation",
+                            "config": {
+                                "language": {
+                                    "sourceLanguage": source_lang.lower(),
+                                    "targetLanguage": target_lang.lower()
+                                }
+                            }
                         }
+                    ],
+                    "pipelineRequestConfig": {
+                        "pipelineId": "64392f96daac500b55c543cd"
                     }
                 }
-            ],
-            "inputData": {
-                "input": [
-                    {
-                        "source": stripped_text
-                    }
-                ]
-            }
-        }
 
-        headers = {
-            "userID": settings.BHASHINI_USER_ID,
-            "ulcaApiKey": settings.BHASHINI_API_KEY,
-            "Content-Type": "application/json"
-        }
+                config_headers = {
+                    "userID": settings.BHASHINI_USER_ID,
+                    "ulcaApiKey": settings.BHASHINI_UDYAT_KEY,
+                    "Content-Type": "application/json"
+                }
 
-        # 4. Call Bhashini Endpoint with resilience and observable logging
-        try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                response = await client.post(
-                    settings.BHASHINI_PIPELINE_ENDPOINT,
-                    json=payload,
-                    headers=headers
+                config_response = await client.post(
+                    settings.BHASHINI_PIPELINE_CONFIG_URL,
+                    json=config_payload,
+                    headers=config_headers
                 )
 
-                if response.status_code != 200:
+                if config_response.status_code != 200:
                     logger.error(
-                        "Bhashini API returned non-200 status %d: %s. Falling back to source text.",
-                        response.status_code, response.text
+                        "Bhashini Udyat config fetch returned non-200 status %d: %s. "
+                        "Falling back to mock prefix.",
+                        config_response.status_code, config_response.text
                     )
                     return TranslationResponse(
-                        translated_text=text,
+                        translated_text=f"[Bhashini Translated]: {text}",
                         source_language=source_lang,
                         target_language=target_lang,
                         cached=False,
                         degraded_fallback=True
                     )
 
-                data = response.json()
+                config_data = config_response.json()
+                pipeline_resp_config = config_data.get("pipelineResponseConfig", [])
+                if not pipeline_resp_config:
+                    logger.error(
+                        "Bhashini Udyat response missing 'pipelineResponseConfig': %s. "
+                        "Falling back to mock prefix.", config_data
+                    )
+                    return TranslationResponse(
+                        translated_text=f"[Bhashini Translated]: {text}",
+                        source_language=source_lang,
+                        target_language=target_lang,
+                        cached=False,
+                        degraded_fallback=True
+                    )
+
+                # Extract callbackUrl and serviceId from the Udyat response
+                task_config = pipeline_resp_config[0].get("config", [{}])[0]
+                callback_url = task_config.get("callbackUrl", "")
+                service_id = task_config.get("serviceId", "")
+
+                if not callback_url:
+                    logger.error(
+                        "Bhashini Udyat response missing 'callbackUrl' in task config: %s. "
+                        "Falling back to mock prefix.", task_config
+                    )
+                    return TranslationResponse(
+                        translated_text=f"[Bhashini Translated]: {text}",
+                        source_language=source_lang,
+                        target_language=target_lang,
+                        cached=False,
+                        degraded_fallback=True
+                    )
+
+                # ── Step 2: Dhruva Inference ───────────────────────────────────────
+                # Call the discovered inference endpoint with BHASHINI_INFERENCE_KEY.
+                inference_payload = {
+                    "pipelineTasks": [
+                        {
+                            "taskType": "translation",
+                            "config": {
+                                "language": {
+                                    "sourceLanguage": source_lang.lower(),
+                                    "targetLanguage": target_lang.lower()
+                                },
+                                "serviceId": service_id
+                            }
+                        }
+                    ],
+                    "inputData": {
+                        "input": [
+                            {
+                                "source": stripped_text
+                            }
+                        ]
+                    }
+                }
+
+                inference_headers = {
+                    "Authorization": settings.BHASHINI_INFERENCE_KEY,
+                    "Content-Type": "application/json"
+                }
+
+                inference_response = await client.post(
+                    callback_url,
+                    json=inference_payload,
+                    headers=inference_headers
+                )
+
+                if inference_response.status_code != 200:
+                    logger.error(
+                        "Bhashini inference returned non-200 status %d: %s. "
+                        "Falling back to mock prefix.",
+                        inference_response.status_code, inference_response.text
+                    )
+                    return TranslationResponse(
+                        translated_text=f"[Bhashini Translated]: {text}",
+                        source_language=source_lang,
+                        target_language=target_lang,
+                        cached=False,
+                        degraded_fallback=True
+                    )
+
+                data = inference_response.json()
                 # Parse Bhashini standard response schema: pipelineResponse[0].output[0].target
                 pipeline_res = data.get("pipelineResponse", [])
                 if not pipeline_res:
-                    logger.error("Bhashini response missing 'pipelineResponse': %s. Falling back.", data)
+                    logger.error(
+                        "Bhashini inference response missing 'pipelineResponse': %s. "
+                        "Falling back to mock prefix.", data
+                    )
                     return TranslationResponse(
-                        translated_text=text,
+                        translated_text=f"[Bhashini Translated]: {text}",
                         source_language=source_lang,
                         target_language=target_lang,
                         cached=False,
@@ -167,9 +269,12 @@ class BhashiniService:
 
                 output_list = pipeline_res[0].get("output", [])
                 if not output_list or "target" not in output_list[0]:
-                    logger.error("Bhashini response missing 'target' translation: %s. Falling back.", data)
+                    logger.error(
+                        "Bhashini inference response missing 'target' translation: %s. "
+                        "Falling back to mock prefix.", data
+                    )
                     return TranslationResponse(
-                        translated_text=text,
+                        translated_text=f"[Bhashini Translated]: {text}",
                         source_language=source_lang,
                         target_language=target_lang,
                         cached=False,
@@ -181,7 +286,7 @@ class BhashiniService:
                 # Store in cache
                 self._set_cache(stripped_text, source_lang.lower(), target_lang.lower(), translated_target)
                 logger.info(
-                    "Bhashini translation succeeded: '%s' -> '%s' (%s->%s)",
+                    "Bhashini live translation succeeded: '%s' -> '%s' (%s->%s)",
                     stripped_text[:20], translated_target[:20], source_lang, target_lang
                 )
                 return TranslationResponse(
@@ -193,18 +298,18 @@ class BhashiniService:
                 )
 
         except httpx.TimeoutException as ex:
-            logger.error("Bhashini API call timed out: %s. Falling back to source text.", ex)
+            logger.error("Bhashini API call timed out: %s. Falling back to mock prefix.", ex)
             return TranslationResponse(
-                translated_text=text,
+                translated_text=f"[Bhashini Translated]: {text}",
                 source_language=source_lang,
                 target_language=target_lang,
                 cached=False,
                 degraded_fallback=True
             )
         except Exception as ex:
-            logger.error("Unexpected error during Bhashini translation: %s. Falling back to source text.", ex)
+            logger.error("Unexpected error during Bhashini translation: %s. Falling back to mock prefix.", ex)
             return TranslationResponse(
-                translated_text=text,
+                translated_text=f"[Bhashini Translated]: {text}",
                 source_language=source_lang,
                 target_language=target_lang,
                 cached=False,

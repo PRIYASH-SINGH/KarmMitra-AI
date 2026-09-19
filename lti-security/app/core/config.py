@@ -71,15 +71,19 @@ class Settings(BaseSettings):
     # Bhashini Digital Public Infrastructure (DPI) Configuration
     BHASHINI_USER_ID: str = Field(
         default="",
-        description="User ID for Bhashini NMT API"
+        description="User ID for Bhashini ULCA / Udyat API"
     )
-    BHASHINI_API_KEY: str = Field(
+    BHASHINI_UDYAT_KEY: str = Field(
         default="",
-        description="API Key for Bhashini pipeline inference API"
+        description="Udyat API key used to fetch the pipeline config (modelConfigSearch)"
     )
-    BHASHINI_PIPELINE_ENDPOINT: str = Field(
-        default="https://dhruva-api.bhashini.gov.in/services/inference/pipeline",
-        description="Inference pipeline endpoint for Bhashini translation"
+    BHASHINI_INFERENCE_KEY: str = Field(
+        default="",
+        description="Inference API key sent as 'Authorization' header to the Dhruva pipeline endpoint"
+    )
+    BHASHINI_PIPELINE_CONFIG_URL: str = Field(
+        default="https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline",
+        description="Udyat endpoint to dynamically fetch service-level pipeline configuration"
     )
 
     # Local / Mock development mode (Note: Signature verification is NEVER disabled in prod paths)
