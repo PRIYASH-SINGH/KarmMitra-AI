@@ -1,11 +1,21 @@
 # Environments
 .env
-.env.local
+.env.*
+!.env.example
+backend/.env
+lti-security/.env
+mock-igot-platform/.env
+rag-service/.env
 .venv
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# PDFs & Raw Binary Documents
+*.pdf
+rag-service/data/raw_pdfs/*.pdf
+!rag-service/data/raw_pdfs/.gitkeep
 
 # Node
 node_modules/
@@ -46,25 +56,9 @@ MANIFEST
 .DS_Store
 Thumbs.db
 
-docs/KarmMitra AI Prototype Prep.pdf
-docs/prep_text.txt
-docs/01_Handover.md
-docs/02_Decisions.md
-docs/03_Explicit_comments.md
-docs/04_Flow.md
-docs/05_Bug_Feature.md
-docs/06_Architecture.md
-docs/07_Gemini_Next_Steps_Handoff.md
-docs/Claude_Master_Context.md
-
 # Certificates and Keys
 certs/
 *.key
 *.pem
 *.pub
-
-# LTI Keys
 backend/certs/*.key
-
-docs/
-
