@@ -91,7 +91,7 @@ Detailed architectural and design documentation is located in the [`docs/`](./do
 
 ## 👥 Team
 
-**Team Name:** AGS  
+**Team Name:** Tech Trishul
 **Problem Statement:** SIH26101 — AI-driven Competency Gap Analysis & Personalized Learning for MoSPI
 
 ---
