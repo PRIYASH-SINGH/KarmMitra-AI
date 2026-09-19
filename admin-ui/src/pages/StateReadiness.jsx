@@ -127,13 +127,13 @@ export default function StateReadiness() {
                   <TableRow key={row.state} hover>
                     <TableCell sx={{ fontWeight: 500 }}>{row.state}</TableCell>
                     <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                      {row.totalStaff.toLocaleString()}
+                      {(row.totalStaff ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                      {row.readiness}%
+                      {String(row.readiness ?? 0).replace('%', '')}%
                     </TableCell>
                     <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                      {row.completionRate}%
+                      {String(row.completionRate ?? 0).replace('%', '')}%
                     </TableCell>
                     <TableCell>
                       <StatusChip status={PRIORITY_LABEL[row.status] || row.status} />

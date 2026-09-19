@@ -9,6 +9,21 @@ import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
  * drawer with the underlying breakdown.
  */
 export default function StatCard({ label, value, description, tone = 'primary', onClick }) {
+  const isInvalidValue =
+    value === undefined ||
+    value === null ||
+    (typeof value === 'number' && isNaN(value)) ||
+    value === 'NaN' ||
+    value === 'NaN%' ||
+    value === 'undefined' ||
+    value === 'undefined%';
+  const displayValue = isInvalidValue ? '0' : value;
+
+  const isInvalidDesc =
+    description === 'undefined staff enrolled' ||
+    description === 'undefined staff completed';
+  const displayDescription = isInvalidDesc ? '0 staff' : description;
+
   return (
     <Card
       onClick={onClick}
@@ -34,11 +49,11 @@ export default function StatCard({ label, value, description, tone = 'primary', 
         variant="h5"
         sx={{ color: (theme) => theme.palette[tone].main, lineHeight: 1.1 }}
       >
-        {value}
+        {displayValue}
       </Typography>
-      {description && (
+      {displayDescription && (
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.78rem' }}>
-          {description}
+          {displayDescription}
         </Typography>
       )}
       {onClick && (

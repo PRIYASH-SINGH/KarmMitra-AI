@@ -93,13 +93,13 @@ export default function DivisionReadinessPage() {
                           {row.name}
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {row.proficient.toLocaleString()}
+                          {(row.proficient ?? 0).toLocaleString()}
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {row.needTraining.toLocaleString()}
+                          {(row.needTraining ?? 0).toLocaleString()}
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {row.readinessPercent}%
+                          {row.readinessPercent ?? 0}%
                         </TableCell>
                         <TableCell align="right">
                           <Button size="small" variant="outlined" onClick={() => setActiveDivision(row)}>

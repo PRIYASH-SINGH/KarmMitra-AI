@@ -42,28 +42,87 @@ export default function TrainingThroughput() {
     );
   }
 
-  const { kpi, monthly, workshops } = analytics.trainingThroughput || { kpi: {}, monthly: [], workshops: [] };
-  const inProgress = Math.max(kpi?.workshopsScheduled - kpi?.workshopsCompleted, 0);
+  const throughput = analytics?.trainingThroughput || {};
+  const kpi = throughput?.kpi || {};
+  const monthly = Array.isArray(throughput?.monthly) ? throughput.monthly : [];
+  const workshops = Array.isArray(throughput?.workshops) ? throughput.workshops : [];
+
+  const workshopsScheduled = Number(kpi?.workshopsScheduled ?? 0) || 0;
+  const workshopsCompleted = Number(kpi?.workshopsCompleted ?? 0) || 0;
+  const inProgress = Math.max(workshopsScheduled - workshopsCompleted, 0);
+  const safeInProgress = isNaN(inProgress) ? 0 : inProgress;
+
+  const staffEnrolled = Number(kpi?.staffEnrolled ?? 0) || 0;
+  const staffCompleted = Number(kpi?.staffCompleted ?? 0) || 0;
+
+  // Safe completion rate calculation: check if explicit valid number, else calculate with zero-division check
+  const rawCompletionRate = kpi?.completionRate;
+  const calculatedCompletionRate = staffEnrolled > 0
+    ? Math.round((staffCompleted / staffEnrolled) * 100)
+    : 0;
+
+  const completionRate = (rawCompletionRate !== undefined && rawCompletionRate !== null && !isNaN(Number(rawCompletionRate)))
+    ? Math.round(Number(rawCompletionRate))
+    : calculatedCompletionRate;
+  const safeCompletionRate = isNaN(completionRate) ? 0 : Math.min(Math.max(completionRate, 0), 100);
 
   const cards = [
-    { label: 'Training Planned', value: kpi.workshopsScheduled, description: 'Workshops scheduled this cycle' },
-    { label: 'Training In Progress', value: inProgress, description: 'Scheduled, not yet completed' },
-    { label: 'Training Completed', value: kpi.workshopsCompleted, description: `${kpi.staffCompleted?.toLocaleString()} staff completed` },
-    { label: 'Completion Rate', value: `${kpi.completionRate}%`, description: `${kpi.staffEnrolled?.toLocaleString()} staff enrolled` },
+    {
+      label: 'Training Planned',
+      value: workshopsScheduled,
+      description: 'Workshops scheduled this cycle',
+    },
+    {
+      label: 'Training In Progress',
+      value: safeInProgress,
+      description: 'Scheduled, not yet completed',
+    },
+    {
+      label: 'Training Completed',
+      value: workshopsCompleted,
+      description: `${staffCompleted.toLocaleString()} staff completed`,
+    },
+    {
+      label: 'Completion Rate',
+      value: `${safeCompletionRate}%`,
+      description: `${staffEnrolled.toLocaleString()} staff enrolled`,
+    },
   ];
 
-  const demandByCompetency = [...(analytics.kcmCompetencies || [])]
-    .map((c) => ({ subject: c.subject, affectedStaff: c.affectedStaff }))
+  const rawCompetencies = Array.isArray(analytics?.kcmCompetencies) && analytics.kcmCompetencies.length > 0
+    ? analytics.kcmCompetencies
+    : (Array.isArray(analytics?.kcmRadar) ? analytics.kcmRadar : []);
+
+  const demandByCompetency = [...rawCompetencies]
+    .map((c) => {
+      const subject = c?.subject || c?.name || 'General Competency';
+      const affectedStaff = Number(c?.affectedStaff ?? c?.needTraining ?? 0) || 0;
+      return { subject, affectedStaff };
+    })
     .filter((c) => c.affectedStaff > 0)
     .sort((a, b) => b.affectedStaff - a.affectedStaff)
     .slice(0, 5);
 
-  const divisionStatus = (analytics.divisionData || []).map((d) => ({
-    code: d.code,
-    name: d.name,
-    readinessPercent: d.readinessPercent,
-    needTraining: d.needTraining,
-  }));
+  const divisionStatus = (analytics?.divisionData || []).map((d) => {
+    const proficient = Number(d?.proficient ?? 0) || 0;
+    const needTraining = Number(d?.needTraining ?? 0) || 0;
+    const total = proficient + needTraining;
+    const calculatedReadiness = total > 0 ? Math.round((proficient / total) * 100) : 0;
+    const rawReadiness = d?.readinessPercent;
+    const readinessPercent = (rawReadiness !== undefined && rawReadiness !== null && !isNaN(Number(rawReadiness)))
+      ? Number(rawReadiness)
+      : calculatedReadiness;
+
+    const code = d?.code || (d?.name ? d.name.split(' ')[0] : 'DIV');
+    const name = d?.name || 'Unknown Division';
+
+    return {
+      code,
+      name,
+      readinessPercent: isNaN(readinessPercent) ? 0 : readinessPercent,
+      needTraining,
+    };
+  });
 
   return (
     <Box>
@@ -165,13 +224,20 @@ export default function TrainingThroughput() {
                       <TableRow key={d.code} hover>
                         <TableCell sx={{ fontWeight: 500 }}>{d.name}</TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {d.readinessPercent}%
+                          {d.readinessPercent ?? 0}%
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                          {d.needTraining.toLocaleString()}
+                          {(d.needTraining ?? 0).toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))}
+                    {divisionStatus.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center" sx={{ py: 2, color: 'text.secondary' }}>
+                          No division training data available.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -196,16 +262,23 @@ export default function TrainingThroughput() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {workshops.map((w) => (
-                  <TableRow key={w.name} hover>
-                    <TableCell sx={{ fontWeight: 500 }}>{w.name}</TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{w.division}</TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{w.date}</TableCell>
+                {workshops.map((w, idx) => (
+                  <TableRow key={w?.name || idx} hover>
+                    <TableCell sx={{ fontWeight: 500 }}>{w?.name ?? 'Unnamed Workshop'}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{w?.division ?? 'General'}</TableCell>
+                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{w?.date ?? 'Scheduled'}</TableCell>
                     <TableCell>
-                      <StatusChip status={w.status} />
+                      <StatusChip status={w?.status ?? 'Scheduled'} />
                     </TableCell>
                   </TableRow>
                 ))}
+                {workshops.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                      No workshops recorded for this cycle.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
