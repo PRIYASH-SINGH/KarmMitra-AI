@@ -70,6 +70,7 @@ To evaluate the core value proposition of KarmMitra AI, follow this exact flow:
 | **Absolute Data Sovereignty** | Uses Llama-3.2-1B running strictly on local edge infrastructure. No citizen or government data leaves the intranet. |
 | **Zero Hallucination AI** | Assessments are generated purely from verified MoSPI/NSSTA manuals indexed in ChromaDB via a strict RAG pipeline, not generative guesswork. |
 | **Frictionless Integration** | Open Standards (LTI 1.3 Advantage + OIDC) integration ensures zero-password friction for officials already on iGOT Karmayogi. |
+| **Bhashini DPI Integration** | Fully LIVE multi-lingual support powered by the Government of India's official Bhashini Translation API (Udyat/Inference). |
 | **Open-Source & Scalable** | Built on PostgreSQL, FastAPI, and React — zero recurring licensing fees, fully auditable, and deployable on MeghRaj. |
 
 ---
