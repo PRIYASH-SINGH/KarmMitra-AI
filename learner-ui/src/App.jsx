@@ -450,7 +450,7 @@ export default function App() {
                 setTriageResult(null);
                 setCurrentScreen(SCREENS.LANDING);
               }}
-              onSelectPathway={() => {}} // Additional functionality mock
+              onSelectPathway={setActivePathwayModal}
               uiTranslations={uiTranslations}
             />
           )}
@@ -552,6 +552,8 @@ export default function App() {
                 <Button 
                   variant="outlined" 
                   onClick={() => {
+                    // Open Mock iGOT platform simulator in a new tab
+                    window.open('http://localhost:9000', '_blank', 'noopener,noreferrer');
                     setActivePathwayModal(null);
                     setIsEnrollmentSimulating(false);
                     showToast(`Simulated LTI redirect completed.`, 'success');
