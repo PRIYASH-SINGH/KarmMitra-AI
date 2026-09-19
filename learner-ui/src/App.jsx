@@ -392,6 +392,8 @@ export default function App() {
             <AssessmentRunner
               questions={dynamicQuestions}
               weakCompetencyName={triageResult?.weakCompetency?.name || triageResult?.identified_gaps?.[0]?.competency_name || 'Target Competency'}
+              competencyCode={triageResult?.weakCompetency?.key || triageResult?.identified_gaps?.[0]?.competency_code || 'STAT_SAMPLING'}
+              learner={learner}
               baselineScore={triageResult?.score || triageResult?.overallScore || 0}
               onReturnToDashboard={() => setCurrentScreen(SCREENS.DASHBOARD)}
               onRetakeDynamicAssessment={handleStartDynamicAssessment}

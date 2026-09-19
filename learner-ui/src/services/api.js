@@ -47,12 +47,14 @@ export function getLearnerProfileFromUrl() {
     return DEFAULT_LEARNER;
   }
 
+  const lineitem = params.get('lineitem') || params.get('lineitem_url');
   return {
     ...DEFAULT_LEARNER,
     userId: userId || DEFAULT_LEARNER.userId,
     roleCode: role || DEFAULT_LEARNER.roleCode,
     roleTitle: role === 'MOSPI_FOD_INV_01' ? 'Field Investigator Grade-II' : `Specialist (${role || 'Default'})`,
     lineitem: lineitem || 'National Sample Survey Framework',
+    lineitem_url: lineitem || null,
     isFromUrlParams: true,
   };
 }
@@ -281,5 +283,25 @@ export async function uploadDocumentForAssessment(file) {
     return { success: true, data: response.data.questions || response.data };
   } catch (err) {
     return { success: false, error: err.response?.data?.detail || err.message };
+  }
+}
+
+/**
+ * Submit dynamic assessment answers for scoring, DB persistence, and AGS passback
+ * Calls POST /api/v1/assessment/submit
+ */
+export async function submitAssessmentResult(submissionPayload) {
+  try {
+    const response = await apiClient.post('/api/v1/assessment/submit', submissionPayload);
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (err) {
+    console.error('Failed to submit assessment result:', err);
+    return {
+      success: false,
+      error: err.response?.data?.detail || err.message,
+    };
   }
 }

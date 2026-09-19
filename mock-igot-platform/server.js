@@ -407,7 +407,7 @@ app.get('/platform/oidc/auth', (req, res) => {
  * Receives learner scores calculated by KarmMitra AI, strictly validates
  * the payload, logs to console, and stores in memory for QA verification.
  */
-app.post('/platform/ags/lineitem/competency_assessment/scores', (req, res) => {
+app.post(['/platform/ags/lineitem/competency_assessment/scores', '/platform/ags/lineitem/scores'], (req, res) => {
   const payload = req.body;
   const authHeader = req.headers.authorization || '';
 

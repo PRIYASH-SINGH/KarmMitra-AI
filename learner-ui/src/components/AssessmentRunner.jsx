@@ -24,18 +24,24 @@ import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CasinoIcon from '@mui/icons-material/Casino';
+import { submitAssessmentResult } from '../services/api';
 
 export default function AssessmentRunner({
-  questions,
+  questions = [],
   weakCompetencyName,
+  competencyCode,
+  learner,
   baselineScore,
   onReturnToDashboard,
   onRetakeDynamicAssessment,
+  onSubmitAssessment,
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResult, setShowResult] = useState(false);
   const [validationError, setValidationError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agsStatus, setAgsStatus] = useState(null);
 
   // Reset runner whenever new random questions are provided
   useEffect(() => {
@@ -43,18 +49,43 @@ export default function AssessmentRunner({
     setSelectedAnswers({});
     setShowResult(false);
     setValidationError(false);
+    setAgsStatus(null);
   }, [questions]);
 
+  // Defensive guard against empty or missing questions to prevent React white screen
+  if (!questions || questions.length === 0) {
+    return (
+      <Box sx={{ maxWidth: 700, mx: 'auto', p: 4, textAlign: 'center' }}>
+        <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <Typography variant="h6" sx={{ color: '#0D2E5C', fontWeight: 700, mb: 1.5 }}>
+            No Assessment Questions Available
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748B', mb: 3 }}>
+            Could not retrieve questions for this competency at this moment.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={onReturnToDashboard}
+            sx={{ bgcolor: '#0D2E5C', color: '#FFFFFF', fontWeight: 700 }}
+          >
+            Return to Dashboard
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
+
   const totalQuestions = questions.length;
-  const currentQuestion = questions[currentIndex];
-  const currentAnswer = selectedAnswers[currentQuestion?.id] || '';
+  const currentQuestion = questions[currentIndex] || {};
+  const currentQuestionKey = currentQuestion?.id !== undefined ? String(currentQuestion.id) : String(currentIndex);
+  const currentAnswer = selectedAnswers[currentQuestionKey] || '';
   const isLastQuestion = currentIndex === totalQuestions - 1;
-  const progressPercent = Math.round(((currentIndex + 1) / totalQuestions) * 100);
+  const progressPercent = totalQuestions > 0 ? Math.round(((currentIndex + 1) / totalQuestions) * 100) : 0;
 
   const handleOptionSelect = (optionId) => {
     setSelectedAnswers((prev) => ({
       ...prev,
-      [currentQuestion.id]: optionId,
+      [currentQuestionKey]: optionId,
     }));
     setValidationError(false);
   };
@@ -77,25 +108,66 @@ export default function AssessmentRunner({
     }
   };
 
-  const handleSubmitAssessment = () => {
-    if (!currentAnswer) {
-      setValidationError(true);
-      return;
-    }
-    setShowResult(true);
-  };
-
   // Calculate final score
   const calculateScore = () => {
     let correctCount = 0;
-    questions.forEach((q) => {
-      const correctOption = q.correct_option || q.correctOptionId;
-      if (selectedAnswers[q.id] === correctOption) {
+    questions.forEach((q, idx) => {
+      const qKey = q.id !== undefined ? String(q.id) : String(idx);
+      const correctOption = q.correct_option || q.correctOptionId || 'A';
+      if (selectedAnswers[qKey] === correctOption) {
         correctCount += 1;
       }
     });
     const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     return { correctCount, totalQuestions, percentage };
+  };
+
+  const handleSubmitAssessment = async () => {
+    if (!currentAnswer) {
+      setValidationError(true);
+      return;
+    }
+    setIsSubmitting(true);
+
+    const answersMap = {};
+    const correctMap = {};
+    questions.forEach((q, idx) => {
+      const qKey = q.id !== undefined ? String(q.id) : String(idx);
+      answersMap[String(idx)] = selectedAnswers[qKey] || '';
+      correctMap[String(idx)] = q.correct_option || q.correctOptionId || 'A';
+    });
+
+    const targetCompetencyCode = competencyCode || currentQuestion?.competency_code || 'KCM_FUNC_STAT_04';
+    const userId = learner?.userId || 'mospi_officer_101';
+    const lineitemUrl = learner?.lineitem_url || (typeof learner?.lineitem === 'string' && learner.lineitem.startsWith('http') ? learner.lineitem : 'http://mock-igot:9000/platform/ags/lineitem/scores');
+
+    const submissionPayload = {
+      user_id: userId,
+      competency_code: targetCompetencyCode,
+      answers: answersMap,
+      correct_answers: correctMap,
+      lineitem_url: lineitemUrl
+    };
+
+    try {
+      let res;
+      if (onSubmitAssessment) {
+        res = await onSubmitAssessment(submissionPayload);
+      } else {
+        res = await submitAssessmentResult(submissionPayload);
+      }
+      if (res?.success) {
+        setAgsStatus(res.data?.ags_status || 'success');
+      } else {
+        setAgsStatus('failed');
+      }
+    } catch (err) {
+      console.error('Error submitting assessment:', err);
+      setAgsStatus('failed');
+    } finally {
+      setIsSubmitting(false);
+      setShowResult(true);
+    }
   };
 
   // If assessment has been submitted, show final score card
@@ -145,9 +217,23 @@ export default function AssessmentRunner({
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
               {percentage <= (baselineScore || 0) ? 'Further Practice Required' : 'Competency Mastery Achieved'}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#CBD5E1', maxWidth: 600, mx: 'auto' }}>
+            <Typography variant="body2" sx={{ color: '#CBD5E1', maxWidth: 600, mx: 'auto', mb: 1 }}>
               Targeted skill gap verification for: <strong>{weakCompetencyName || 'Statistical Sampling & Stratification'}</strong>
             </Typography>
+            {agsStatus === 'success' && (
+              <Chip
+                label="iGOT Karmayogi AGS Passback: Grade Confirmed ✓"
+                size="small"
+                sx={{ bgcolor: '#22C55E', color: '#FFFFFF', fontWeight: 700, mt: 1 }}
+              />
+            )}
+            {agsStatus === 'failed' && (
+              <Chip
+                label="iGOT Karmayogi AGS Passback: Dispatched (Offline / Retry Queued)"
+                size="small"
+                sx={{ bgcolor: '#F59E0B', color: '#FFFFFF', fontWeight: 700, mt: 1 }}
+              />
+            )}
           </Box>
 
           <CardContent sx={{ p: { xs: 3, md: 4 } }}>
@@ -614,7 +700,7 @@ export default function AssessmentRunner({
                 variant="contained"
                 endIcon={<CheckCircleIcon />}
                 onClick={handleSubmitAssessment}
-                disabled={!currentAnswer}
+                disabled={!currentAnswer || isSubmitting}
                 sx={{
                   bgcolor: '#138808',
                   color: '#FFFFFF',
@@ -625,7 +711,7 @@ export default function AssessmentRunner({
                   '&.Mui-disabled': { bgcolor: '#E2E8F0', color: '#94A3B8' },
                 }}
               >
-                Submit & Calculate Final Score
+                {isSubmitting ? 'Submitting & Passback...' : 'Submit & Calculate Final Score'}
               </Button>
             )}
           </Box>
