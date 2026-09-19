@@ -155,3 +155,15 @@ ag-service to inherently guarantee padding/fallback inside SovereignAIEngine.gen
   2. Exposed an internal HTTP boundary POST /api/v1/rag/generate-from-text to safely proxy text inputs without sys.path namespace violation.
   3. Created ackend/app/api/v1/endpoints/upload_assessment.py to extract text securely from 5MB PDFs via pypdf.
   4. Updated Learner UI DashboardView.jsx to render an 'Upload PDF for Quiz' button and wire the generated questions to the existing AssessmentRunner.
+
+### 14. Bhashini Translation API Silent Failure & String Mashing
+* **Symptom:** The Learner UI in Hindi mode displayed translated triage questions, but multiple-choice options and static UI components remained in English. Additionally, the backend was failing to trigger Dhruva inference due to missing `callbackUrl` extraction, causing the UI to rely solely on the `[Bhashini Translated]:` fallback.
+* **Root Cause:** 
+  1. Frontend: The React app mapped over `q.questionText` but blindly passed `q.options` and static strings without awaiting translations. 
+  2. Backend: The Udyat response schema standard places the endpoint inside `pipelineInferenceAPIEndPoint`, which wasn't being correctly parsed in `lti-security/app/services/bhashini.py`.
+* **Resolution:** 
+  1. Extracted translation array logic to a robust `translateQuestionArray` helper in `App.jsx`, ensuring both questions and their nested options are mapped and hydrated.
+  2. Applied this translation pipeline intercept to both Baseline Triage AND dynamic Sovereign RAG / PDF assessments dynamically.
+  3. Replaced static React strings across `DashboardView.jsx` and `TriageView.jsx` with canonical Hindi mappings.
+  4. Fixed `bhashini.py` callback extraction to strictly adhere to the Bhashini Pipeline Inference schema standard.
+
